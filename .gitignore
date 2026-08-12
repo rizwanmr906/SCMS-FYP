@@ -1,0 +1,3 @@
+node_modules/
+Model/xlmr_final_model/model.safetensors
+Model/xlmr_final_model/
