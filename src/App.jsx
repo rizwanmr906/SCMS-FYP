@@ -1,558 +1,1008 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Activity,
-  AlertTriangle,
-  BadgeCheck,
-  BellRing,
-  Briefcase,
+  AlertCircle,
+  ArrowRight,
+  Building2,
+  CheckCircle2,
   ClipboardList,
-  Clock3,
-  Cpu,
-  Droplets,
+  CloudLightning,
+  Eye,
+  EyeOff,
   Flame,
-  LineChart,
-  MapPin,
-  Radio,
-  Search,
+  Gauge,
+  House,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  MonitorCog,
   ShieldCheck,
-  TrendingUp,
+  Sparkles,
+  UserCircle2,
   UserRound,
   Waves,
-  Zap,
+  X,
 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 
-const departmentStyles = {
-  Electricity: {
-    accent: 'from-cyan-400 to-blue-500',
-    accentStrong: 'text-cyan-300',
-    glow: 'shadow-[0_0_35px_rgba(59,130,246,0.45)]',
-    chip: 'bg-cyan-500/20 text-cyan-200 border-cyan-400/30',
-    panel: 'border-cyan-400/35 bg-cyan-500/10',
-    ring: 'ring-cyan-300/40',
-    icon: Zap,
-    title: 'Electricity Department',
-    shortTitle: 'Power Grid',
-    label: 'Energy Demand Team',
-    metricTitle: 'Grid Stability',
-    serviceLine: 'Distribution Network',
-    summary: 'Monitoring city-wide voltage, outage incidents, substations, and public lighting interruptions.',
+const apiBase = '/api';
+const statusColorMap = {
+  Pending: 'bg-amber-100 text-amber-800 border-amber-200',
+  'In Progress': 'bg-blue-100 text-blue-800 border-blue-200',
+  Resolved: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+};
+const departmentMeta = {
+  1: { name: 'Electricity', accent: 'emerald', icon: CloudLightning },
+  2: { name: 'Gas', accent: 'yellow', icon: Flame },
+  3: { name: 'Water', accent: 'cyan', icon: Waves },
+};
+
+const t = {
+  en: {
+    appName: 'Civic Response Hub',
+    user: 'User',
+    admin: 'Admin',
+    department: 'Department',
+    login: 'Login',
+    signup: 'Sign Up',
+    welcomeBack: 'Welcome back',
+    email: 'Email',
+    password: 'Password',
+    confirmPassword: 'Confirm Password',
+    name: 'Full Name',
+    city: 'City',
+    phone: 'Phone Number',
+    streetAddress: 'Street Address',
+    submitComplaint: 'Submit Complaint',
+    myProfile: 'My Profile',
+    dashboard: 'Dashboard',
+    adminDashboard: 'Admin Dashboard',
+    complaintHistory: 'Complaint History',
+    logout: 'Logout',
+    noComplaints: 'No complaints yet',
+    language: 'Language',
+    urdu: 'اردو',
+    english: 'English',
+    profileUpdated: 'Profile updated successfully',
+    complaintSubmitted: 'Complaint submitted successfully',
+    loginSuccess: 'Login successful',
   },
-  Gas: {
-    accent: 'from-amber-400 to-orange-500',
-    accentStrong: 'text-amber-300',
-    glow: 'shadow-[0_0_35px_rgba(249,115,22,0.4)]',
-    chip: 'bg-amber-500/20 text-amber-200 border-amber-400/30',
-    panel: 'border-amber-400/35 bg-amber-500/10',
-    ring: 'ring-amber-300/40',
-    icon: Flame,
-    title: 'Gas Department',
-    shortTitle: 'Gas Safety Unit',
-    label: 'Leak & Safety Response Unit',
-    metricTitle: 'Leak Risk Index',
-    serviceLine: 'Gas Safety Response',
-    summary: 'Coordinating leak inspection, cylinder compliance, hazard checks, and emergency dispatch visibility.',
-  },
-  Water: {
-    accent: 'from-teal-300 to-cyan-500',
-    accentStrong: 'text-teal-300',
-    glow: 'shadow-[0_0_35px_rgba(45,212,191,0.4)]',
-    chip: 'bg-teal-500/20 text-teal-200 border-teal-400/30',
-    panel: 'border-teal-400/35 bg-teal-500/10',
-    ring: 'ring-teal-300/40',
-    icon: Droplets,
-    title: 'Water Department',
-    shortTitle: 'Water Services',
-    label: 'Supply & Drainage Team',
-    metricTitle: 'Water Supply Health',
-    serviceLine: 'Supply & Drainage Network',
-    summary: 'Prioritizing water pressure issues, supply shortages, pipeline pressure safety, and drainage recovery.',
+  ur: {
+    appName: 'سویل رسپانس ہب',
+    user: 'صارف',
+    admin: 'ایڈمن',
+    department: 'محکمہ',
+    login: 'لاگ ان',
+    signup: 'سائن اپ',
+    welcomeBack: 'خوش آمدید',
+    email: 'ای میل',
+    password: 'پاس ورڈ',
+    confirmPassword: 'پاس ورڈ دوبارہ',
+    name: 'پورا نام',
+    city: 'شہر',
+    phone: 'فون نمبر',
+    streetAddress: 'گلی/پتہ',
+    submitComplaint: 'شکایت جمع کروائیں',
+    myProfile: 'میرا پروفائل',
+    dashboard: 'ڈیش بورڈ',
+    adminDashboard: 'ایڈمن ڈیش بورڈ',
+    complaintHistory: 'شکایت کی تاریخ',
+    logout: 'لاگ آؤٹ',
+    noComplaints: 'ابھی تک کوئی شکایت نہیں',
+    language: 'زبان',
+    urdu: 'اردو',
+    english: 'English',
+    profileUpdated: 'پروفائل کامیابی سے اپ ڈیٹ ہوا',
+    complaintSubmitted: 'شکایت کامیابی سے جمع ہوئی',
+    loginSuccess: 'لاگ ان کامیاب رہا',
   },
 };
 
-
-const statusColumns = [
-  { key: 'New', title: 'New', status: 'AI Routed' },
-  { key: 'In Progress', title: 'In Progress', status: 'In Progress' },
-  { key: 'Resolved', title: 'Resolved', status: 'Resolved' },
-];
-
-const formatTime = (isoString) => {
-  if (!isoString) return '';
-  const date = new Date(isoString);
-  if (isNaN(date.getTime())) return isoString; 
-  
-  const diffSecs = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (diffSecs < 60) return 'just now';
-  
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-  }).format(date);
+const formatDate = (dateString) => {
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return dateString;
+  return new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' }).format(date);
 };
 
-const DepartmentView = ({ complaints, updateComplaintStatus, setSelectedComplaint }) => {
-  const { departmentName } = useParams();
+const classNames = (...values) => values.filter(Boolean).join(' ');
 
-  const matchedDepartment = Object.keys(departmentStyles).find(
-    (d) => d.toLowerCase() === departmentName?.toLowerCase()
-  );
-
-  if (!matchedDepartment) {
-    return <Navigate to="/user" replace />;
+function apiFetch(path, options = {}, token) {
+  const headers = { ...(options.headers || {}) };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (!(options.body instanceof FormData) && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
   }
 
-  const departmentInformation = departmentStyles[matchedDepartment];
-  const Icon = departmentInformation.icon;
-  const departmentComplaints = complaints.filter((item) => item.department === matchedDepartment);
-  const activeCount = departmentComplaints.length;
-  const resolvedCount = departmentComplaints.filter((c) => c.status === 'Resolved').length;
-  const progressCount = departmentComplaints.filter((c) => c.status === 'In Progress').length;
-  const aiRoutedCount = departmentComplaints.filter((c) => c.status === 'AI Routed').length;
+  return fetch(`${apiBase}${path}`, {
+    ...options,
+    headers,
+  }).then(async (response) => {
+    const contentType = response.headers.get('content-type') || '';
+    const payload = contentType.includes('application/json') ? await response.json() : await response.text();
+    if (!response.ok) {
+      throw new Error(payload?.detail || payload?.message || 'Request failed');
+    }
+    return payload;
+  });
+}
 
-  const departmentMenus = [
-    {
-      key: 'New',
-      title: 'New',
-      status: 'AI Routed',
-      description: matchedDepartment === 'Electricity'
-        ? 'Fresh power intake complaints'
-        : matchedDepartment === 'Water'
-          ? 'Fresh water supply complaints'
-          : 'Fresh gas safety intake',
-    },
-    {
-      key: 'In Progress',
-      title: 'In Progress',
-      status: 'In Progress',
-      description: matchedDepartment === 'Electricity'
-        ? 'Active power response cases'
-        : matchedDepartment === 'Water'
-          ? 'Active water response cases'
-          : 'Active gas response cases',
-    },
-    {
-      key: 'Resolved',
-      title: 'Resolved',
-      status: 'Resolved',
-      description: matchedDepartment === 'Electricity'
-        ? 'Completed power network tasks'
-        : matchedDepartment === 'Water'
-          ? 'Completed water service tasks'
-          : 'Completed gas safety checks',
-    },
-  ];
-
-  const IconForDepartment = departmentStyles[matchedDepartment].icon;
-  const serviceLabel = departmentStyles[matchedDepartment].title;
-  const serviceAccent = departmentStyles[matchedDepartment].accent;
-  const serviceChip = departmentStyles[matchedDepartment].chip;
-  const servicePanel = departmentStyles[matchedDepartment].panel;
-
-  return (
-    <motion.section key={`dept-${matchedDepartment}`} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
-      <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-5 shadow-glow backdrop-blur-xl">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className={`flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${departmentInformation.accent} shadow-[0_0_35px_rgba(45,212,191,0.15)]`}>
-              <IconForDepartment className="h-7 w-7 text-white" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">{departmentInformation.label}</p>
-              <h2 className="mt-1 text-2xl font-semibold text-white">{serviceLabel}</h2>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-200">Live Operations</div>
-            <div className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-300">{activeCount} active</div>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-4">
-        {[
-          { label: 'Active Cases', value: activeCount, icon: ClipboardList, meta: 'Live queue' },
-          { label: 'In Progress', value: progressCount, icon: Activity, meta: 'Assigned staff' },
-          { label: 'Resolved', value: resolvedCount, icon: ShieldCheck, meta: 'Closed today' },
-          { label: 'AI Routed', value: aiRoutedCount, icon: Cpu, meta: 'Auto intake' },
-        ].map((item) => (
-          <div key={item.label} className="rounded-[24px] border border-white/10 bg-slate-950/70 p-4 shadow-glow backdrop-blur-xl">
-            <div className="mb-3 flex items-center justify-between">
-              <div className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${departmentInformation.accent} p-2`}>
-                <item.icon className="h-5 w-5 text-white" />
-              </div>
-              <span className="rounded-full border border-white/10 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-slate-400">{item.meta}</span>
-            </div>
-            <p className="text-sm text-slate-400">{item.label}</p>
-            <p className="mt-2 text-2xl font-semibold text-white">{item.value}</p>
-          </div>
-        ))}
-      </div>
-
-      <section className="space-y-4">
-        {departmentMenus.map((menu) => {
-          const menuComplaints = departmentComplaints.filter((item) => item.status === menu.status);
-          return (
-            <details key={menu.key} className="overflow-hidden rounded-[24px] border border-white/10 bg-slate-950/70 shadow-glow">
-              <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 text-white">
-                <div className="flex items-center gap-3">
-                  <span className={`flex h-9 w-9 items-center justify-center rounded-full ${servicePanel} text-white`}>
-                    <IconForDepartment className="h-4 w-4" />
-                  </span>
-                  <div>
-                    <div className="text-lg font-semibold">{menu.title}</div>
-                    <div className="text-[11px] uppercase tracking-[0.2em] text-slate-500">{menu.description}</div>
-                  </div>
-                </div>
-                <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${serviceChip}`}>{menuComplaints.length}</span>
-              </summary>
-
-              <div className="grid gap-4 border-t border-white/8 p-4 md:grid-cols-2 xl:grid-cols-3">
-                {menuComplaints.length === 0 && (
-                  <div className="col-span-full rounded-[20px] border border-dashed border-white/20 bg-slate-900/50 p-4 text-sm text-slate-500">
-                    No complaints in this queue.
-                  </div>
-                )}
-
-                {menuComplaints.map((item) => (
-                  <article key={item.id} className="rounded-[22px] border border-white/10 bg-slate-900/90 p-4 shadow-soft transition hover:border-cyan-300/30 hover:bg-slate-900">
-                    <div className="mb-4 flex items-start justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-semibold text-white">{item.citizen}</p>
-                        <div className="mt-1 flex items-center gap-2 text-xs text-slate-400">
-                          <MapPin className="h-3.5 w-3.5" />
-                          {item.language || 'Citizen case'}
-                        </div>
-                        <p className="mt-1 text-[11px] text-slate-500">{formatTime(item.updatedAt)}</p>
-                      </div>
-                      <span className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase ${departmentStyles[item.department].chip}`}>{item.status}</span>
-                    </div>
-
-                    <div className="rounded-2xl border border-white/8 bg-slate-800/50 px-3 py-3">
-                      <p className="text-sm leading-6 text-slate-300">{item.text}</p>
-                    </div>
-
-                    <div className="mt-4">
-                      <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">Update status</label>
-                      <select value={item.status} onChange={(event) => updateComplaintStatus(item.id, event.target.value)} className="w-full rounded-2xl border border-white/10 bg-slate-700/80 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-300/40">
-                        <option value="AI Routed">AI Routed</option>
-                        <option value="In Progress">In Progress</option>
-                        <option value="Resolved">Resolved</option>
-                      </select>
-                    </div>
-
-                    <div className="mt-4 flex items-center justify-between">
-                      <button onClick={() => setSelectedComplaint(item)} className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-100 transition hover:bg-cyan-500/20">View Profile</button>
-                      <span className="flex items-center gap-1 text-[11px] text-slate-400">
-                        <Clock3 className="h-3.5 w-3.5" />
-                        {item.updatedAt}
-                      </span>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </details>
-          );
-        })}
-      </section>
-    </motion.section>
-  );
-};
+function getRoleRoute(user) {
+  if (!user) return '/login';
+  if (user.role === 'admin') return '/admin';
+  if (user.role === 'department') return `/department/${user.departmentId || 1}`;
+  return '/dashboard';
+}
 
 function App() {
+  const navigate = useNavigate();
   const location = useLocation();
-  const [language, setLanguage] = useState('English');
-  const [complaints, setComplaints] = useState([]);
-  const [selectedComplaint, setSelectedComplaint] = useState(null);
-  const [complaintText, setComplaintText] = useState('');
-  const [predictedDepartment, setPredictedDepartment] = useState('Pending AI routing');
-  const [latestSubmission, setLatestSubmission] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [token, setToken] = useState(localStorage.getItem('scms-token') || '');
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('scms-user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [loadingAuth, setLoadingAuth] = useState(true);
+  const [toasts, setToasts] = useState([]);
+  const [lang, setLang] = useState(localStorage.getItem('scms-lang') || 'en');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const ui = t[lang] || t.en;
+  const isRtl = lang === 'ur';
+
+  const pushToast = (message, type = 'success') => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((toast) => toast.id !== id));
+    }, 3200);
+  };
 
   useEffect(() => {
-    const loadComplaints = async () => {
-      try {
-        const response = await fetch('/api/complaints');
-        const data = await response.json();
-        setComplaints(data);
-      } catch (error) {
-        setComplaints([]);
-      }
-    };
+    localStorage.setItem('scms-lang', lang);
+  }, [lang]);
 
-    loadComplaints();
-  }, []);
+  useEffect(() => {
+    if (!token) {
+      setLoadingAuth(false);
+      return;
+    }
+    apiFetch('/auth/me', {}, token)
+      .then((me) => {
+        setUser(me);
+        localStorage.setItem('scms-user', JSON.stringify(me));
+      })
+      .catch(() => {
+        setToken('');
+        setUser(null);
+        localStorage.removeItem('scms-token');
+        localStorage.removeItem('scms-user');
+      })
+      .finally(() => setLoadingAuth(false));
+  }, [token]);
 
-  const stats = useMemo(() => {
-    const resolved = complaints.filter((item) => item.status === 'Resolved').length;
-    const aiRouted = complaints.filter((item) => item.status === 'AI Routed').length;
-    const completionRate = complaints.length ? Math.round((resolved / complaints.length) * 100) : 0;
+  useEffect(() => {
+    if (!token && location.pathname !== '/login' && location.pathname !== '/signup') {
+      navigate('/login', { replace: true });
+    }
+  }, [token, location.pathname, navigate]);
 
-    return {
-      total: complaints.length,
-      resolved,
-      aiRouted,
-      accuracy: `${completionRate}%`,
-    };
-  }, [complaints]);
-
-  const updateComplaintStatus = async (id, next) => {
+  const handleLogin = async ({ email, password }) => {
     try {
-      const response = await fetch(`/api/complaints/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: next }),
-      });
-      const updated = await response.json();
-      setComplaints((prev) => prev.map((item) => item.id === id ? updated : item));
+      const data = await apiFetch('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      }, token);
+      const nextUser = data.user;
+      setToken(data.token);
+      setUser(nextUser);
+      localStorage.setItem('scms-token', data.token);
+      localStorage.setItem('scms-user', JSON.stringify(nextUser));
+      pushToast(ui.loginSuccess, 'success');
+      navigate(getRoleRoute(nextUser), { replace: true });
     } catch (error) {
-      setComplaints((prev) => prev.map((item) => item.id === id ? { ...item, status: next, updatedAt: new Date().toISOString() } : item));
+      pushToast(error.message, 'error');
     }
   };
 
-  const handleSubmitComplaint = async () => {
-    if (!complaintText.trim()) return;
+  const handleSignup = async (payload) => {
+    try {
+      await apiFetch('/auth/signup', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }, token);
+      pushToast('Account created successfully. Please log in.', 'success');
+      navigate('/login', { replace: true });
+    } catch (error) {
+      pushToast(error.message, 'error');
+    }
+  };
 
+  const handleLogout = async () => {
+    try {
+      await apiFetch('/auth/logout', { method: 'POST' }, token);
+    } catch (error) {
+      console.warn(error);
+    } finally {
+      setToken('');
+      setUser(null);
+      localStorage.removeItem('scms-token');
+      localStorage.removeItem('scms-user');
+      navigate('/login', { replace: true });
+      pushToast('Logged out successfully', 'success');
+    }
+  };
+
+  const navItems = useMemo(() => {
+    const items = [
+      { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['user'] },
+      { to: '/admin', label: 'Admin', icon: MonitorCog, roles: ['admin'] },
+      { to: `/department/${user?.departmentId || 1}`, label: 'Department', icon: Building2, roles: ['department'] },
+      { to: '/profile', label: 'Profile', icon: UserCircle2, roles: ['user', 'admin', 'department'] },
+    ];
+    return items.filter((item) => item.roles.includes(user?.role));
+  }, [user]);
+
+  if (loadingAuth) {
+    return <LoadingScreen />;
+  }
+
+  return (
+    <div dir={isRtl ? 'rtl' : 'ltr'} className={classNames('min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50 text-slate-800', isRtl && 'font-[')}>
+      <div className="mx-auto max-w-[1600px] p-3 sm:p-5 lg:p-7">
+        <div className="overflow-hidden rounded-[28px] border border-emerald-100 bg-white/80 shadow-[0_28px_80px_rgba(16,185,129,0.12)] backdrop-blur-xl">
+          <ToastStack toasts={toasts} />
+          {!user ? (
+            <Routes>
+              <Route path="/login" element={<AuthPage mode="login" onLogin={handleLogin} ui={ui} toggleLang={setLang} lang={lang} />} />
+              <Route path="/signup" element={<AuthPage mode="signup" onSignup={handleSignup} ui={ui} toggleLang={setLang} lang={lang} />} />
+              <Route path="*" element={<Navigate to="/login" replace />} />
+            </Routes>
+          ) : (
+            <div className="flex min-h-screen flex-col lg:flex-row">
+              <aside className={classNames('border-b border-emerald-100 bg-white/90 p-4 lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r', mobileMenuOpen ? 'block' : 'hidden lg:block')}>
+                <div className="flex items-center justify-between gap-3 border-b border-emerald-100 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-green-600 shadow-lg shadow-emerald-200">
+                      <ShieldCheck className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-emerald-600">SCMS</p>
+                      <h1 className="text-lg font-bold text-slate-800">{ui.appName}</h1>
+                    </div>
+                  </div>
+                  <button className="rounded-xl border border-emerald-100 p-2 text-slate-600 lg:hidden" onClick={() => setMobileMenuOpen(false)}>
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <nav className="mt-6 space-y-2">
+                  {navItems.map(({ to, label, icon: Icon }) => (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={({ isActive }) => classNames(
+                        'flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition-all',
+                        isActive ? 'bg-emerald-50 text-emerald-700 shadow-sm ring-1 ring-emerald-100' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {label}
+                    </NavLink>
+                  ))}
+
+                  <button onClick={handleLogout} className="mt-4 flex w-full items-center gap-3 rounded-2xl border border-rose-100 bg-rose-50 px-3 py-3 text-sm font-medium text-rose-700 transition hover:bg-rose-100">
+                    <LogOut className="h-4 w-4" />
+                    {ui.logout}
+                  </button>
+                </nav>
+
+                <div className="mt-8 rounded-3xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-sm ring-1 ring-emerald-100">
+                      <UserRound className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.2em] text-emerald-700">{user.role}</p>
+                      <p className="font-semibold text-slate-800">{user.name}</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 space-y-2 text-xs text-slate-600">
+                    <div className="flex items-center justify-between">
+                      <span>{ui.email}</span>
+                      <span className="font-medium text-slate-700">{user.email}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>{ui.city}</span>
+                      <span className="font-medium text-slate-700">{user.city}</span>
+                    </div>
+                  </div>
+                </div>
+              </aside>
+
+              <div className="flex-1">
+                <header className="border-b border-emerald-100 bg-white/80 px-4 py-3 shadow-sm sm:px-6">
+                  <div className="flex items-center justify-between gap-3">
+                    <button className="rounded-xl border border-emerald-200 p-2 text-emerald-700 lg:hidden" onClick={() => setMobileMenuOpen((prev) => !prev)}>
+                      <Menu className="h-5 w-5" />
+                    </button>
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 shadow-[0_16px_28px_rgba(16,185,129,0.25)]">
+                        <Sparkles className="h-4 w-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-emerald-600">{ui.appName}</p>
+                        <h2 className="text-lg font-bold text-slate-800">{user.role === 'admin' ? ui.adminDashboard : user.role === 'department' ? 'Department Operations' : ui.dashboard}</h2>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <div className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
+                        {isRtl ? ui.urdu : ui.english}
+                      </div>
+                      <select
+                        value={lang}
+                        onChange={(event) => setLang(event.target.value)}
+                        className="rounded-full border border-emerald-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 outline-none"
+                      >
+                        <option value="en">English</option>
+                        <option value="ur">اردو</option>
+                      </select>
+                    </div>
+                  </div>
+                </header>
+
+                <main className="min-h-[calc(100vh-80px)] bg-gradient-to-br from-emerald-50/40 via-white to-green-50/40 p-4 sm:p-6">
+                  <AnimatePresence mode="wait">
+                    <Routes location={location} key={location.pathname}>
+                      <Route path="/dashboard" element={<UserDashboard token={token} user={user} ui={ui} pushToast={pushToast} />} />
+                      <Route path="/admin" element={<AdminDashboard token={token} ui={ui} pushToast={pushToast} />} />
+                      <Route path="/department/:departmentId" element={<DepartmentDashboard token={token} user={user} ui={ui} pushToast={pushToast} />} />
+                      <Route path="/profile" element={<ProfilePage token={token} user={user} ui={ui} pushToast={pushToast} />} />
+                      <Route path="*" element={<Navigate to={getRoleRoute(user)} replace />} />
+                    </Routes>
+                  </AnimatePresence>
+                </main>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AuthPage({ mode, onLogin, onSignup, ui, toggleLang, lang }) {
+  const navigate = useNavigate();
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    city: '',
+    phone: '',
+    streetAddress: '',
+  });
+
+  const isLogin = mode === 'login';
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    const payload = {
+      ...form,
+      email: form.email.trim(),
+    };
+    if (isLogin) {
+      onLogin({ email: payload.email, password: payload.password });
+    } else {
+      onSignup(payload);
+    }
+  };
+
+  return (
+    <div className="grid min-h-screen lg:grid-cols-2">
+      <div className="flex items-center justify-center bg-gradient-to-br from-emerald-600 via-green-600 to-emerald-500 p-8 text-white">
+        <div className="max-w-xl">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 ring-1 ring-white/20">
+              <ShieldCheck className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.35em] text-emerald-100">SCMS</p>
+              <h1 className="text-3xl font-bold">{ui.appName}</h1>
+            </div>
+          </div>
+
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="rounded-[28px] border border-white/20 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
+            <div className="mb-5 flex items-center gap-3">
+              <div className="rounded-2xl bg-white/15 p-2">
+                <ClipboardList className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-[0.25em] text-emerald-100">Smart Service</p>
+                <p className="text-xl font-semibold">Civic complaint tracking</p>
+              </div>
+            </div>
+            <ul className="space-y-3 text-emerald-50/90">
+              <li className="flex items-center gap-3"><CheckCircle2 className="h-4 w-4" /> Secure multi-role access</li>
+              <li className="flex items-center gap-3"><CheckCircle2 className="h-4 w-4" /> Personalized complaint ownership</li>
+              <li className="flex items-center gap-3"><CheckCircle2 className="h-4 w-4" /> Department-aware escalation</li>
+              <li className="flex items-center gap-3"><CheckCircle2 className="h-4 w-4" /> Urdu and English interface</li>
+            </ul>
+          </motion.div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-center bg-white p-8">
+        <div className="w-full max-w-lg rounded-[32px] border border-emerald-100 bg-gradient-to-br from-white to-emerald-50/30 p-6 shadow-[0_30px_80px_rgba(16,185,129,0.08)]">
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.28em] text-emerald-600">{isLogin ? ui.login : ui.signup}</p>
+              <h2 className="mt-2 text-3xl font-bold text-slate-800">{isLogin ? ui.welcomeBack : 'Create an account'}</h2>
+            </div>
+            <select value={lang} onChange={(event) => toggleLang(event.target.value)} className="rounded-full border border-emerald-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 outline-none">
+              <option value="en">English</option>
+              <option value="ur">اردو</option>
+            </select>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {!isLogin && (
+              <InputField label={ui.name} value={form.name} onChange={(value) => setForm((prev) => ({ ...prev, name: value }))} />
+            )}
+            <InputField label={ui.email} type="email" value={form.email} onChange={(value) => setForm((prev) => ({ ...prev, email: value }))} />
+            <InputField label={ui.password} type="password" value={form.password} onChange={(value) => setForm((prev) => ({ ...prev, password: value }))} />
+            {!isLogin && (
+              <>
+                <InputField label={ui.confirmPassword} type="password" value={form.confirmPassword} onChange={(value) => setForm((prev) => ({ ...prev, confirmPassword: value }))} />
+                <InputField label={ui.city} value={form.city} onChange={(value) => setForm((prev) => ({ ...prev, city: value }))} />
+                <InputField label={ui.phone} value={form.phone} onChange={(value) => setForm((prev) => ({ ...prev, phone: value }))} />
+                <InputField label={ui.streetAddress} value={form.streetAddress} onChange={(value) => setForm((prev) => ({ ...prev, streetAddress: value }))} />
+              </>
+            )}
+
+            <button type="submit" className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_18px_32px_rgba(16,185,129,0.25)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_36px_rgba(16,185,129,0.32)]">
+              {isLogin ? ui.login : ui.signup}
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </form>
+
+          <div className="mt-6 text-center text-sm text-slate-600">
+            {isLogin ? 'New to the platform?' : 'Already have an account?'}{' '}
+            <button onClick={() => navigate(isLogin ? '/signup' : '/login')} className="font-semibold text-emerald-600 hover:text-emerald-700">
+              {isLogin ? ui.signup : ui.login}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InputField({ label, type = 'text', value, onChange, disabled = false }) {
+  const isPasswordField = type === 'password';
+  const [showPassword, setShowPassword] = useState(false);
+
+  return (
+    <label className="block text-sm font-medium text-slate-700">
+      <span className="mb-2 block">{label}</span>
+      <div className="relative">
+        <input
+          type={isPasswordField && showPassword ? 'text' : type}
+          value={value}
+          disabled={disabled}
+          placeholder={label}
+          autoComplete={type === 'password' ? 'current-password' : type === 'email' ? 'email' : 'off'}
+          onChange={(event) => onChange(event.target.value)}
+          className="w-full rounded-2xl border border-emerald-100 bg-white px-4 py-3 pr-11 text-slate-800 outline-none ring-0 transition placeholder:text-slate-400 focus:border-emerald-400 focus:shadow-[0_0_0_4px_rgba(16,185,129,0.08)] disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
+        />
+        {isPasswordField && (
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            className="absolute inset-y-0 right-3 flex items-center text-slate-500 transition hover:text-emerald-600"
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+          >
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        )}
+      </div>
+    </label>
+  );
+}
+
+function LoadingScreen() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-green-50">
+      <div className="flex items-center gap-3 rounded-full border border-emerald-100 bg-white px-5 py-3 shadow-sm">
+        <div className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-200 border-t-emerald-600" />
+        <span className="text-sm font-medium text-slate-700">Loading dashboard...</span>
+      </div>
+    </div>
+  );
+}
+
+function UserDashboard({ token, user, ui, pushToast }) {
+  const [complaints, setComplaints] = useState([]);
+  const [summary, setSummary] = useState({ totalComplaints: 0, pending: 0, inProgress: 0, resolved: 0 });
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const loadDashboard = () => {
+    Promise.all([
+      apiFetch('/dashboard/summary', {}, token),
+      apiFetch('/complaints', {}, token),
+    ])
+      .then(([summaryData, list]) => {
+        setSummary(summaryData);
+        setComplaints(list);
+      })
+      .catch((error) => pushToast(error.message, 'error'));
+  };
+
+  useEffect(() => {
+    loadDashboard();
+  }, [token]);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!description.trim()) {
+      pushToast('Complaint description is required', 'error');
+      return;
+    }
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/predict', {
+      await apiFetch('/complaints', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: complaintText }),
-      });
-      const data = await response.json();
-      const department = data.department || 'Electricity';
-      const confidenceText = `${department} • ${(data.confidence * 100).toFixed(1)}% confidence`;
-      setPredictedDepartment(confidenceText);
-
-      const responseBody = await fetch('/api/complaints', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          citizen: 'Anonymous Citizen',
-          citizenEmail: 'citizen@example.com',
-          language,
-          text: complaintText,
-          department,
-          status: 'AI Routed',
-        }),
-      });
-      const newComplaint = await responseBody.json();
-
-      setLatestSubmission({ ...newComplaint, predictedDepartment: department, confidence: data.confidence });
-      setComplaints((prev) => [newComplaint, ...prev]);
-      setComplaintText('');
+        body: JSON.stringify({ title, description, language: 'English' }),
+      }, token);
+      setTitle('');
+      setDescription('');
+      loadDashboard();
+      pushToast(ui.complaintSubmitted, 'success');
     } catch (error) {
-      setPredictedDepartment('Routing unavailable, fallback used');
+      pushToast(error.message, 'error');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-transparent px-4 py-6 text-slate-100 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl rounded-[32px] border border-white/10 bg-slate-900/70 p-4 shadow-[0_0_120px_rgba(15,23,42,0.9)] backdrop-blur-2xl sm:p-6 lg:p-8">
-        <header className="mb-8 flex flex-col gap-4 rounded-[24px] border border-white/10 bg-slate-950/70 p-4 shadow-glow backdrop-blur-xl lg:flex-row lg:items-center lg:justify-between lg:p-6">
-          <div>
-            <div className="mb-3 flex items-center gap-3">
-              <div className="rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 p-3 shadow-[0_0_25px_rgba(59,130,246,0.45)]">
-                <ShieldCheck className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <p className="text-sm uppercase tracking-[0.35em] text-cyan-200/80">Smart Complaint Management System</p>
-                <h1 className="text-2xl font-semibold text-white sm:text-3xl">AI-Driven Civic Issue Routing</h1>
-              </div>
+    <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} className="space-y-6">
+      <section className="grid gap-4 md:grid-cols-4">
+        {[
+          { label: 'Total', value: summary.totalComplaints, icon: ClipboardList },
+          { label: 'Pending', value: summary.pending, icon: AlertCircle },
+          { label: 'In Progress', value: summary.inProgress, icon: Gauge },
+          { label: 'Resolved', value: summary.resolved, icon: CheckCircle2 },
+        ].map(({ label, value, icon: Icon }) => (
+          <div key={label} className="rounded-[26px] border border-emerald-100 bg-white p-4 shadow-[0_18px_40px_rgba(16,185,129,0.08)]">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-[0_16px_32px_rgba(16,185,129,0.22)]">
+              <Icon className="h-5 w-5" />
             </div>
-            <p className="max-w-2xl text-sm text-slate-300 sm:text-base">A futuristic complaint portal blending citizen support, admin oversight, and department automation into one elegant experience.</p>
+            <p className="text-sm text-slate-500">{label}</p>
+            <p className="mt-2 text-3xl font-bold text-slate-900">{value}</p>
           </div>
-        </header>
+        ))}
+      </section>
 
-        <AnimatePresence mode="wait">
-          <Routes location={location} key={location.pathname}>
-            <Route path="/" element={<Navigate to="/user" replace />} />
-            
-            <Route path="/user" element={
-              <motion.section key="citizen" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-              <div className="rounded-[28px] border border-white/10 bg-slate-950/70 p-5 shadow-glow backdrop-blur-xl">
-                <div className="mb-5 flex items-center justify-between">
+      <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="rounded-[28px] border border-emerald-100 bg-white p-5 shadow-[0_18px_40px_rgba(16,185,129,0.08)]">
+          <div className="mb-5 flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.25em] text-emerald-600">{ui.submitComplaint}</p>
+              <h3 className="mt-2 text-2xl font-bold text-slate-900">Submit a complaint</h3>
+            </div>
+            <div className="rounded-full bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">Authenticated</div>
+          </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <input
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="Complaint title"
+              className="w-full rounded-2xl border border-emerald-100 bg-emerald-50/30 px-4 py-3 text-sm text-slate-800 outline-none focus:border-emerald-400"
+            />
+            <textarea
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              rows="6"
+              placeholder="Describe the issue in detail..."
+              className="w-full rounded-2xl border border-emerald-100 bg-emerald-50/30 px-4 py-3 text-sm text-slate-800 outline-none focus:border-emerald-400"
+            />
+            <button type="submit" disabled={isSubmitting} className="rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_32px_rgba(16,185,129,0.24)] transition hover:-translate-y-0.5 disabled:opacity-70">
+              {isSubmitting ? 'Submitting...' : ui.submitComplaint}
+            </button>
+          </form>
+        </div>
+
+        <div className="rounded-[28px] border border-emerald-100 bg-white p-5 shadow-[0_18px_40px_rgba(16,185,129,0.08)]">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.25em] text-emerald-600">Profile</p>
+              <h3 className="mt-2 text-2xl font-bold text-slate-900">{user.name}</h3>
+            </div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700"><UserCircle2 className="h-5 w-5" /></div>
+          </div>
+          <div className="space-y-3 text-sm text-slate-600">
+            <InfoRow label={ui.email} value={user.email} />
+            <InfoRow label={ui.city} value={user.city} />
+            <InfoRow label={ui.phone} value={user.phone} />
+            <InfoRow label={ui.streetAddress} value={user.streetAddress} />
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-[28px] border border-emerald-100 bg-white p-5 shadow-[0_18px_40px_rgba(16,185,129,0.08)]">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.28em] text-emerald-600">{ui.complaintHistory}</p>
+            <h3 className="mt-2 text-2xl font-bold text-slate-900">Recent complaints</h3>
+          </div>
+        </div>
+        {complaints.length === 0 ? (
+          <EmptyState message={ui.noComplaints} />
+        ) : (
+          <div className="space-y-3">
+            {complaints.slice(0, 6).map((complaint) => (
+              <div key={complaint.id} className="rounded-2xl border border-emerald-100 bg-emerald-50/25 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Citizen Dashboard</p>
-                    <h2 className="text-xl font-semibold">Submit a new complaint</h2>
-                  </div>
-                  <div className="flex rounded-full border border-white/10 bg-white/10 p-1">
-                    {['Urdu', 'English', 'Roman English'].map((item) => (
-                      <button key={item} onClick={() => setLanguage(item)} className={`rounded-full px-3 py-1.5 text-sm transition ${language === item ? 'bg-white/20 text-white' : 'text-slate-400'}`}>{item}</button>
-                    ))}
-                  </div>
-                </div>
-                <div className="mb-4 rounded-[22px] border border-cyan-400/20 bg-cyan-500/10 p-4">
-                  <label className="mb-2 block text-sm font-medium text-cyan-100">Describe your issue</label>
-                  <textarea
-                    rows="8"
-                    value={complaintText}
-                    onChange={(event) => setComplaintText(event.target.value)}
-                    className="w-full rounded-[20px] border border-white/10 bg-slate-900/80 p-4 text-sm text-slate-200 outline-none focus:border-cyan-400/40"
-                    placeholder="Write your complaint in Urdu, English, or Roman English..."
-                  />
-                </div>
-                <div className="mb-6 flex flex-wrap gap-3">
-                  {Object.entries(departmentStyles).map(([dept, style]) => (
-                    <button key={dept} className={`rounded-full border px-4 py-2 text-sm shadow-soft ${style.chip}`}>
-                      {dept}
-                    </button>
-                  ))}
-                </div>
-                <div className="mb-4 rounded-[20px] border border-cyan-400/20 bg-slate-900/60 px-4 py-3 text-sm text-cyan-100">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span>Predicted route</span>
-                    <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${departmentStyles[latestSubmission?.department || predictedDepartment.split(' •')[0]]?.chip || 'bg-cyan-500/10 text-cyan-100 border-cyan-400/20'}`}>
-                      {latestSubmission?.department || predictedDepartment}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-400">The complaint will be routed to this department as soon as it is submitted.</p>
-                </div>
-                <motion.button
-                  whileHover={{ scale: 1.02, y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleSubmitComplaint}
-                  disabled={isSubmitting}
-                  className="rounded-full bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500 px-5 py-3 text-sm font-semibold text-white shadow-[0_12px_35px_rgba(59,130,246,0.45)] disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  {isSubmitting ? 'Routing complaint...' : 'Submit Complaint'}
-                </motion.button>
-              </div>
-
-              <div className="rounded-[28px] border border-white/10 bg-slate-950/70 p-5 shadow-glow backdrop-blur-xl">
-                <div className="mb-5 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Tracking Flow</p>
-                    <h2 className="text-xl font-semibold">Live status tracker</h2>
-                  </div>
-                  <div className="rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-sm text-emerald-200">AI Routed</div>
-                </div>
-                <div className="flex flex-col gap-4">
-                  {['Submitted', 'AI Routed', 'In Progress', 'Resolved'].map((step, index) => (
-                    <div key={step} className="flex items-center gap-3 rounded-[18px] border border-white/10 bg-white/5 p-3">
-                      <div className={`flex h-10 w-10 items-center justify-center rounded-full ${index <= 1 ? 'bg-cyan-500/20 text-cyan-200' : 'bg-slate-800 text-slate-300'}`}>
-                        {index === 0 ? <ClipboardList className="h-5 w-5" /> : index === 1 ? <Cpu className="h-5 w-5" /> : index === 2 ? <Briefcase className="h-5 w-5" /> : <ShieldCheck className="h-5 w-5" />}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-white">{step}</p>
-                        <p className="text-sm text-slate-400">{index === 0 ? 'Complaint received' : index === 1 ? 'Department assigned by AI' : index === 2 ? 'Official is handling it' : 'Issue resolved successfully'}</p>
-                      </div>
-                      {index < 3 && <div className="h-1.5 w-12 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500" />}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </motion.section>
-            } />
-
-            <Route path="/admin" element={
-              <motion.section key="admin" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-3">
-                {[
-                  { label: 'Total Complaints', value: stats.total, icon: ClipboardList, glow: 'from-cyan-400 to-blue-500' },
-                  { label: 'AI Routed', value: stats.aiRouted, icon: Cpu, glow: 'from-amber-400 to-orange-500' },
-                  { label: 'Resolved', value: stats.resolved, icon: ShieldCheck, glow: 'from-teal-400 to-cyan-500' },
-                ].map((card) => (
-                  <div key={card.label} className="rounded-[24px] border border-white/10 bg-slate-950/70 p-4 shadow-glow backdrop-blur-xl">
-                    <div className={`mb-3 inline-flex rounded-2xl bg-gradient-to-br ${card.glow} p-3 shadow-[0_0_25px_rgba(59,130,246,0.25)]`}>
-                      <card.icon className="h-5 w-5 text-white" />
-                    </div>
-                    <p className="text-sm text-slate-400">{card.label}</p>
-                    <p className="mt-1 text-2xl font-semibold text-white">{card.value}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="rounded-[28px] border border-white/10 bg-slate-950/70 p-5 shadow-glow backdrop-blur-xl">
-                {latestSubmission && (
-                  <div className="mb-4 rounded-[20px] border border-cyan-400/20 bg-cyan-500/10 p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm uppercase tracking-[0.2em] text-cyan-200/80">Latest Routed Complaint</p>
-                        <p className="mt-1 text-sm text-white">{latestSubmission.text}</p>
-                      </div>
-                      <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${departmentStyles[latestSubmission.department]?.chip || 'bg-cyan-500/10 text-cyan-100 border-cyan-400/20'}`}>
-                        {latestSubmission.department}
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-slate-900">{complaint.title || 'Complaint'}</p>
+                      <span className={classNames('rounded-full border px-2.5 py-1 text-[10px] font-semibold', statusColorMap[complaint.status] || 'bg-slate-100 text-slate-700 border-slate-200')}>
+                        {complaint.status}
                       </span>
                     </div>
+                    <p className="mt-2 text-sm text-slate-600">{complaint.description}</p>
                   </div>
-                )}
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Operations Console</p>
-                    <h2 className="text-xl font-semibold">All department complaints</h2>
+                  <div className="text-xs text-slate-500">
+                    <p>{departmentMeta[complaint.departmentId]?.name || 'Department'}</p>
+                    <p>{formatDate(complaint.createdAt)}</p>
                   </div>
-                  <button className="rounded-full border border-white/10 bg-white/10 px-3 py-2 text-sm text-slate-200">Export</button>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-left text-sm">
-                    <thead>
-                      <tr className="border-b border-white/10 text-slate-400">
-                        <th className="px-3 py-3">Citizen</th>
-                        <th className="px-3 py-3">Department</th>
-                        <th className="px-3 py-3">Status</th>
-                        <th className="px-3 py-3">Updated</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {complaints.map((item) => (
-                        <tr key={item.id} className="border-b border-white/5 text-slate-200 hover:bg-white/5">
-                          <td className="px-3 py-3"><button onClick={() => setSelectedComplaint(item)} className="font-medium text-cyan-200 hover:text-cyan-100">{item.citizen}</button></td>
-                          <td className="px-3 py-3">{item.department}</td>
-                          <td className="px-3 py-3"><span className={`rounded-full border px-2.5 py-1 text-xs ${departmentStyles[item.department].chip}`}>{item.status}</span></td>
-                          <td className="px-3 py-3">{formatTime(item.updatedAt)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
                 </div>
               </div>
-            </motion.section>
-            } />
+            ))}
+          </div>
+        )}
+      </section>
+    </motion.div>
+  );
+}
 
-            <Route path="/:departmentName" element={
-              <DepartmentView complaints={complaints} updateComplaintStatus={updateComplaintStatus} setSelectedComplaint={setSelectedComplaint} />
-            } />
-          </Routes>
-        </AnimatePresence>
+function AdminDashboard({ token, ui, pushToast }) {
+  const [summary, setSummary] = useState({ totalComplaints: 0, pending: 0, inProgress: 0, resolved: 0, users: 0, departmentBreakdown: {} });
+  const [complaints, setComplaints] = useState([]);
 
-        <AnimatePresence>
-          {selectedComplaint && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-xl">
-              <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 20, opacity: 0 }} className="w-full max-w-2xl rounded-[28px] border border-white/10 bg-slate-900/95 p-6 shadow-[0_0_80px_rgba(15,23,42,0.9)]">
-                <div className="mb-4 flex items-start justify-between">
-                  <div>
-                    <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Complaint Profile</p>
-                    <h3 className="text-2xl font-semibold text-white">{selectedComplaint.citizen}</h3>
+  const loadData = () => {
+    Promise.all([
+      apiFetch('/dashboard/summary', {}, token),
+      apiFetch('/complaints', {}, token),
+    ])
+      .then(([summaryData, list]) => {
+        setSummary(summaryData);
+        setComplaints(list);
+      })
+      .catch((error) => pushToast(error.message, 'error'));
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [token]);
+
+  const updateStatus = async (id, status) => {
+    try {
+      await apiFetch(`/complaints/${id}`, { method: 'PUT', body: JSON.stringify({ status, note: `Status updated to ${status}` }) }, token);
+      loadData();
+      pushToast('Complaint status updated', 'success');
+    } catch (error) {
+      pushToast(error.message, 'error');
+    }
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} className="space-y-6">
+      <section className="grid gap-4 md:grid-cols-5">
+        {[
+          { label: 'Total', value: summary.totalComplaints },
+          { label: 'Pending', value: summary.pending },
+          { label: 'In Progress', value: summary.inProgress },
+          { label: 'Resolved', value: summary.resolved },
+          { label: 'Users', value: summary.users },
+        ].map((item) => (
+          <div key={item.label} className="rounded-[24px] border border-emerald-100 bg-white p-4 shadow-[0_18px_40px_rgba(16,185,129,0.08)]">
+            <p className="text-sm text-slate-500">{item.label}</p>
+            <p className="mt-2 text-3xl font-bold text-slate-900">{item.value}</p>
+          </div>
+        ))}
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-3">
+        {Object.entries(summary.departmentBreakdown || {}).map(([name, count]) => (
+          <div key={name} className="rounded-[24px] border border-emerald-100 bg-white p-4 shadow-[0_18px_40px_rgba(16,185,129,0.08)]">
+            <p className="text-sm text-slate-500">{name}</p>
+            <p className="mt-2 text-3xl font-bold text-slate-900">{count}</p>
+          </div>
+        ))}
+      </section>
+
+      <section className="rounded-[28px] border border-emerald-100 bg-white p-5 shadow-[0_18px_40px_rgba(16,185,129,0.08)]">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.25em] text-emerald-600">Operations</p>
+            <h3 className="mt-2 text-2xl font-bold text-slate-900">All complaints</h3>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="border-b border-emerald-100">
+              <tr className="text-slate-500">
+                <th className="px-3 py-3 font-medium">User</th>
+                <th className="px-3 py-3 font-medium">Department</th>
+                <th className="px-3 py-3 font-medium">Status</th>
+                <th className="px-3 py-3 font-medium">Updated</th>
+              </tr>
+            </thead>
+            <tbody>
+              {complaints.map((complaint) => (
+                <tr key={complaint.id} className="border-b border-emerald-50 text-slate-700">
+                  <td className="px-3 py-3 font-medium">{complaint.userName}</td>
+                  <td className="px-3 py-3">{departmentMeta[complaint.departmentId]?.name || complaint.department}</td>
+                  <td className="px-3 py-3">
+                    <select value={complaint.status} onChange={(event) => updateStatus(complaint.id, event.target.value)} className="rounded-full border border-emerald-100 bg-emerald-50 px-2 py-1 text-xs font-medium outline-none">
+                      <option value="Pending">Pending</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Resolved">Resolved</option>
+                    </select>
+                  </td>
+                  <td className="px-3 py-3">{formatDate(complaint.updatedAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </motion.div>
+  );
+}
+
+function DepartmentDashboard({ token, user, ui, pushToast }) {
+  const [complaints, setComplaints] = useState([]);
+  const [summary, setSummary] = useState({ totalComplaints: 0, pending: 0, inProgress: 0, resolved: 0 });
+  const [selectedUser, setSelectedUser] = useState(null);
+
+  const loadData = () => {
+    apiFetch(`/departments/${user.departmentId}/complaints`, {}, token)
+      .then((list) => {
+        setComplaints(list);
+        setSummary({
+          totalComplaints: list.length,
+          pending: list.filter((c) => c.status === 'Pending').length,
+          inProgress: list.filter((c) => c.status === 'In Progress').length,
+          resolved: list.filter((c) => c.status === 'Resolved').length,
+        });
+      })
+      .catch((error) => pushToast(error.message, 'error'));
+  };
+
+  const loadUserProfile = async (complaint) => {
+    try {
+      const profileFromComplaint = complaint && {
+        name: complaint.userName || 'Unknown user',
+        email: complaint.userEmail || 'N/A',
+        city: complaint.userCity || 'N/A',
+        phone: complaint.userPhone || 'N/A',
+        streetAddress: complaint.userStreetAddress || 'N/A',
+      };
+
+      if (profileFromComplaint && profileFromComplaint.name) {
+        setSelectedUser(profileFromComplaint);
+        return;
+      }
+
+      if (!complaint?.userId) {
+        pushToast('No complainant profile is available for this complaint', 'error');
+        return;
+      }
+
+      const profile = await apiFetch(`/users/${complaint.userId}`, {}, token);
+      setSelectedUser(profile);
+    } catch (error) {
+      pushToast(error.message, 'error');
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [token, user.departmentId]);
+
+  const updateStatus = async (id, status) => {
+    try {
+      await apiFetch(`/complaints/${id}`, { method: 'PUT', body: JSON.stringify({ status, note: `Updated to ${status}` }) }, token);
+      loadData();
+      pushToast('Department status updated', 'success');
+    } catch (error) {
+      pushToast(error.message, 'error');
+    }
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} className="space-y-6">
+      <section className="grid gap-4 md:grid-cols-4">
+        {[
+          { label: 'Total', value: summary.totalComplaints },
+          { label: 'Pending', value: summary.pending },
+          { label: 'In Progress', value: summary.inProgress },
+          { label: 'Resolved', value: summary.resolved },
+        ].map((item) => (
+          <div key={item.label} className="rounded-[24px] border border-emerald-100 bg-white p-4 shadow-[0_18px_40px_rgba(16,185,129,0.08)]">
+            <p className="text-sm text-slate-500">{item.label}</p>
+            <p className="mt-2 text-3xl font-bold text-slate-900">{item.value}</p>
+          </div>
+        ))}
+      </section>
+
+      {selectedUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 10 }}
+            className="w-full max-w-lg rounded-[28px] border border-emerald-100 bg-white p-5 shadow-[0_30px_80px_rgba(15,23,42,0.18)]"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.25em] text-emerald-600">Complainant profile</p>
+                <h3 className="mt-2 text-2xl font-bold text-slate-900">{selectedUser.name}</h3>
+              </div>
+              <button onClick={() => setSelectedUser(null)} className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100">Close</button>
+            </div>
+            <div className="mt-5 grid gap-3 text-sm text-slate-600 md:grid-cols-2">
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3"><span className="block font-semibold text-slate-700">Email</span> {selectedUser.email}</div>
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3"><span className="block font-semibold text-slate-700">City</span> {selectedUser.city}</div>
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3"><span className="block font-semibold text-slate-700">Phone</span> {selectedUser.phone}</div>
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3 md:col-span-2"><span className="block font-semibold text-slate-700">Address</span> {selectedUser.streetAddress}</div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      <section className="rounded-[28px] border border-emerald-100 bg-white p-5 shadow-[0_18px_40px_rgba(16,185,129,0.08)]">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.25em] text-emerald-600">Department</p>
+            <h3 className="mt-2 text-2xl font-bold text-slate-900">{departmentMeta[user.departmentId]?.name || 'Department'} queue</h3>
+          </div>
+        </div>
+
+        {complaints.length === 0 ? (
+          <EmptyState message="No department complaints currently assigned." />
+        ) : (
+          <div className="space-y-3">
+            {complaints.map((complaint) => (
+              <div key={complaint.id} className="rounded-2xl border border-emerald-100 bg-emerald-50/25 p-4">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                  <div className="flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold text-slate-900">{complaint.title || 'Complaint'}</p>
+                      <span className={classNames('rounded-full border px-2.5 py-1 text-[10px] font-semibold', statusColorMap[complaint.status] || 'bg-slate-100 text-slate-700 border-slate-200')}>
+                        {complaint.status}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm text-slate-600">{complaint.description}</p>
+                    <p className="mt-2 text-xs text-slate-500">Submitted by {complaint.userName} • {formatDate(complaint.createdAt)}</p>
                   </div>
-                  <button onClick={() => setSelectedComplaint(null)} className="rounded-full border border-white/10 bg-white/10 px-3 py-2 text-sm text-slate-200">Close</button>
+                  <div className="flex min-w-[220px] flex-col gap-2 md:items-end">
+                    <button
+                      type="button"
+                      onClick={() => loadUserProfile(complaint)}
+                      className="rounded-2xl border border-emerald-200 bg-white px-3 py-2 text-sm font-medium text-emerald-700 transition hover:bg-emerald-50"
+                    >
+                      View complainant profile
+                    </button>
+                    <select value={complaint.status} onChange={(event) => updateStatus(complaint.id, event.target.value)} className="w-full rounded-2xl border border-emerald-100 bg-white px-3 py-2 text-sm text-slate-700 outline-none">
+                      <option value="Pending">Pending</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Resolved">Resolved</option>
+                    </select>
+                  </div>
                 </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="rounded-[22px] border border-white/10 bg-white/5 p-4">
-                    <p className="text-sm text-slate-400">Email</p>
-                    <p className="mt-1 font-medium text-white">{selectedComplaint.citizenEmail}</p>
-                    <p className="mt-4 text-sm text-slate-400">Complaint</p>
-                    <p className="mt-1 text-sm text-slate-200">{selectedComplaint.text}</p>
-                  </div>
-                  <div className="rounded-[22px] border border-white/10 bg-white/5 p-4">
-                    <p className="text-sm text-slate-400">Department</p>
-                    <p className="mt-1 font-medium text-white">{selectedComplaint.department}</p>
-                    <p className="mt-4 text-sm text-slate-400">History</p>
-                    <ul className="mt-2 space-y-2 text-sm text-slate-200">
-                      {selectedComplaint.history.map((entry, index) => (
-                        <li key={index} className="rounded-lg border border-white/5 bg-slate-800/60 px-3 py-2">{entry.note} • {entry.actor} • {formatTime(entry.time)}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+    </motion.div>
+  );
+}
+
+function ProfilePage({ token, user, ui, pushToast }) {
+  const [form, setForm] = useState({
+    name: user.name,
+    city: user.city,
+    phone: user.phone,
+    streetAddress: user.streetAddress,
+  });
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    try {
+      await apiFetch('/users/me', {
+        method: 'PUT',
+        body: JSON.stringify({
+          name: form.name,
+          city: form.city,
+          phone: form.phone,
+          streetAddress: form.streetAddress,
+        }),
+      }, token);
+      pushToast(ui.profileUpdated, 'success');
+    } catch (error) {
+      pushToast(error.message, 'error');
+    }
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} className="rounded-[28px] border border-emerald-100 bg-white p-5 shadow-[0_18px_40px_rgba(16,185,129,0.08)]">
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.25em] text-emerald-600">Profile</p>
+          <h3 className="mt-2 text-2xl font-bold text-slate-900">{ui.myProfile}</h3>
+        </div>
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+          <UserCircle2 className="h-5 w-5" />
+        </div>
       </div>
+
+      <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
+        <InputField label={ui.name} value={form.name} onChange={(value) => setForm({ ...form, name: value })} />
+        <InputField label={ui.email} value={user.email} onChange={() => {}} disabled />
+        <InputField label={ui.city} value={form.city} onChange={(value) => setForm({ ...form, city: value })} />
+        <InputField label={ui.phone} value={form.phone} onChange={(value) => setForm({ ...form, phone: value })} />
+        <div className="md:col-span-2">
+          <InputField label={ui.streetAddress} value={form.streetAddress} onChange={(value) => setForm({ ...form, streetAddress: value })} />
+        </div>
+        <div className="md:col-span-2">
+          <button type="submit" className="rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 px-4 py-3 text-sm font-semibold text-white shadow-[0_18px_32px_rgba(16,185,129,0.24)]">
+            Save profile
+          </button>
+        </div>
+      </form>
+    </motion.div>
+  );
+}
+
+function ToastStack({ toasts }) {
+  return (
+    <div className="pointer-events-none fixed right-4 top-4 z-50 space-y-2">
+      {toasts.map((toast) => (
+        <div key={toast.id} className={classNames('rounded-2xl border px-4 py-3 text-sm shadow-xl backdrop-blur-sm', toast.type === 'error' ? 'border-rose-200 bg-rose-50 text-rose-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700')}>
+          {toast.message}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EmptyState({ message }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/30 p-8 text-center text-sm text-slate-500">
+      {message}
+    </div>
+  );
+}
+
+function InfoRow({ label, value }) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-2xl border border-emerald-100 bg-emerald-50/40 px-3 py-2">
+      <span className="text-slate-500">{label}</span>
+      <span className="font-medium text-slate-800">{value || '—'}</span>
     </div>
   );
 }
