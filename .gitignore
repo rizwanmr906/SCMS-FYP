@@ -1,0 +1,7 @@
+node_modules/
+.venv/
+dist/
+certs/
+.env
+Model/xlmr_final_model/
+backend/app/complaints.db
