@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   Sparkles,
   Square,
+  Trash2,
   UserCircle2,
   UserRound,
   Waves,
@@ -111,6 +112,9 @@ const t = {
     stopRecording: 'Stop recording',
     recording: 'Recording...',
     removeVoiceNote: 'Remove voice note',
+    deleteComplaint: 'Delete complaint',
+    confirmDeleteComplaint: 'Delete this complaint permanently?',
+    complaintDeleted: 'Complaint deleted successfully',
   },
   ur: {
     appName: 'سویل رسپانس ہب',
@@ -182,6 +186,9 @@ const t = {
     stopRecording: 'ریکارڈنگ روکیں',
     recording: 'ریکارڈنگ جاری ہے...',
     removeVoiceNote: 'صوتی نوٹ ہٹائیں',
+    deleteComplaint: 'شکایت حذف کریں',
+    confirmDeleteComplaint: 'کیا یہ شکایت مستقل طور پر حذف کرنی ہے؟',
+    complaintDeleted: 'شکایت کامیابی سے حذف ہو گئی',
   },
   ru: {
     appName: 'Civic Response Hub',
@@ -254,6 +261,9 @@ const t = {
     stopRecording: 'Recording rokein',
     recording: 'Recording ho rahi hai...',
     removeVoiceNote: 'Voice note hatayein',
+    deleteComplaint: 'Shikayat delete karein',
+    confirmDeleteComplaint: 'Kya yeh shikayat hamesha ke liye delete karni hai?',
+    complaintDeleted: 'Shikayat kamyabi se delete ho gayi',
   },
 };
 
@@ -300,6 +310,25 @@ function encodeWav(samples, sampleRate) {
     view.setInt16(44 + index * 2, clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff, true);
   });
   return new Blob([view], { type: 'audio/wav' });
+}
+
+function ComplaintDeleteButton({ complaintId, token, ui, onDeleted }) {
+  const handleDelete = async () => {
+    if (!window.confirm(ui.confirmDeleteComplaint)) return;
+    try {
+      await apiFetch(`/complaints/${complaintId}`, { method: 'DELETE' }, token);
+      onDeleted();
+    } catch (error) {
+      window.alert(error.message);
+    }
+  };
+
+  return (
+    <button type="button" onClick={handleDelete} className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100">
+      <Trash2 className="h-3.5 w-3.5" />
+      {ui.deleteComplaint}
+    </button>
+  );
 }
 
 function apiFetch(path, options = {}, token) {
@@ -973,6 +1002,9 @@ function UserDashboard({ token, user, ui, pushToast }) {
                   <div className="text-xs text-slate-500">
                     <p>{departmentMeta[complaint.departmentId]?.name || 'Department'}</p>
                     <p>{formatDate(complaint.createdAt)}</p>
+                    <div className="mt-3">
+                      <ComplaintDeleteButton complaintId={complaint.id} token={token} ui={ui} onDeleted={() => { loadDashboard(); pushToast(ui.complaintDeleted, 'success'); }} />
+                    </div>
                   </div>
                 </div>
               </div>

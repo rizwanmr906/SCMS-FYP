@@ -953,6 +953,26 @@ def update_complaint(complaint_id: int, payload: ComplaintUpdate, current_user: 
     return {"message": "Complaint updated successfully", "status": next_status}
 
 
+@app.delete("/api/complaints/{complaint_id}")
+def delete_complaint(complaint_id: int, current_user: Dict[str, Any] = Depends(get_current_user)):
+    conn = db_connect(); cursor = conn.cursor()
+    cursor.execute("SELECT user_id, department_id FROM complaints WHERE id = ?", (complaint_id,))
+    row = cursor.fetchone()
+    if not row:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Complaint not found")
+    if current_user["role"] != "user":
+        conn.close()
+        raise HTTPException(status_code=403, detail="Only citizens can delete complaints")
+    if row["user_id"] != current_user["id"]:
+        conn.close()
+        raise HTTPException(status_code=403, detail="You cannot delete another user's complaint")
+    cursor.execute("DELETE FROM complaint_events WHERE complaint_id = ?", (complaint_id,))
+    cursor.execute("DELETE FROM complaints WHERE id = ?", (complaint_id,))
+    conn.commit(); conn.close()
+    return {"message": "Complaint deleted successfully"}
+
+
 @app.get("/api/health")
 def api_health():
     return {"status": "ok"}
