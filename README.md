@@ -218,7 +218,9 @@ The frontend uses `/api` locally through the Vite proxy. In production, `VITE_AP
 
 ### Backend on Hugging Face Spaces
 
-Deploy the FastAPI backend as a Docker Space or use another Python hosting provider. The production server must listen on the hosting platform's assigned port, commonly `7860` for Hugging Face Docker Spaces.
+Create a Docker Space and use the root `Dockerfile`. The production server listens on port `7860`, as required by Hugging Face Docker Spaces.
+
+Upload or connect this repository to the Space. The root `Dockerfile` runs only the FastAPI backend. The Compose files are for local full-stack Docker runs.
 
 Set all backend environment variables in the hosting provider's secret manager. Do not upload `.env` or expose the Supabase database password in frontend code.
 
