@@ -167,6 +167,36 @@ If the model is unavailable, the backend uses the built-in keyword classifier fa
 
 ## Deployment
 
+### Run with Docker
+
+Docker Compose runs the frontend and backend together. Supabase remains the database.
+
+Make sure `.env` contains the backend settings, then run from the project root:
+
+```powershell
+docker compose up --build
+```
+
+Open the application at:
+
+```text
+http://localhost:3000
+```
+
+The frontend container serves the Vite build through Nginx and proxies `/api` requests to the backend container. The local model directory is mounted read-only at `/app/Model/xlmr_final_model`. If it is unavailable, the backend uses its keyword-classification fallback.
+
+Stop the containers with:
+
+```powershell
+docker compose down
+```
+
+Run in the background with:
+
+```powershell
+docker compose up --build -d
+```
+
 ### Frontend on Vercel
 
 Use these Vercel settings:

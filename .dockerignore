@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.venv/
+__pycache__/
+*.pyc
+.env
+.git/
+.gitignore
+README.md
+backend/app/complaints.db
+backend/app/complaints.db.backup
