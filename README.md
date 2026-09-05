@@ -1,140 +1,230 @@
-# Smart Complaint Management System (SCMS)
+# Smart Complaint Management System
 
-A secure civic complaint management platform with role-based access for citizens, departments, and admins. The project includes a FastAPI backend, React + Vite frontend, SQLite database, and a local ML-based complaint routing model.
+Smart Complaint Management System (SCMS) is a responsive React and FastAPI application for submitting, classifying, routing, and tracking civic utility complaints.
 
-## Features
+The system supports:
 
-- Citizen complaint submission and tracking
-- Department dashboard with complaint queue and status updates
-- Admin dashboard for system oversight
-- Secure authentication with hashed passwords
-- Role-based authorization
-- Local ML department routing for complaint classification
-- Modern responsive UI with English and Urdu support
-
-## Tech Stack
-
-- Frontend: React, Vite, Tailwind CSS
-- Backend: FastAPI, SQLite
-- ML: local transformer model under Model/xlmr_final_model
+- Citizen signup, login, profiles, and complaint history
+- Admin complaint and user management
+- Department queues for Electricity, Gas, and Water
+- AI-assisted complaint classification with keyword fallback
+- Complaint status tracking and event history
+- English, Urdu, and Roman Urdu interface options
+- Optional voice-note complaint submission
+- Supabase PostgreSQL persistence
 
 ## Project Structure
 
-- backend/app/main.py — FastAPI API and business logic
-- database/schema.sql — database schema reference
-- src/ — frontend source files
-- Model/xlmr_final_model/ — local complaint classification model
-- index.html — app entry point
-- package.json — frontend scripts and dependencies
-- .venv/ — Python virtual environment
-
-## Prerequisites
-
-- Node.js 18+
-- Python 3.10+
-- npm
-- Windows PowerShell, Git Bash, or a similar terminal
-
-## 1) Install frontend dependencies
-
-From the project root:
-
-```powershell
-npm install
+```text
+src/                  React frontend
+backend/app/main.py   FastAPI backend
+database/schema.sql   Database reference schema
+Model/                Local XLM-R model files
 ```
 
-## 2) Set up the Python environment
+## Requirements
 
-From the project root:
+- Node.js 18 or newer
+- Python 3.11 or newer
+- A Supabase project with the application tables created
+- Git
+
+## Supabase Database
+
+Create the following tables in Supabase SQL Editor using the project database SQL:
+
+```text
+departments
+users
+sessions
+complaints
+complaint_events
+```
+
+The `departments` table must contain these rows:
+
+```text
+1 - Electricity
+2 - Gas
+3 - Water
+```
+
+The backend uses PostgreSQL through `psycopg` and a connection pool. It does not create the schema automatically.
+
+## Environment Configuration
+
+Copy the example file:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Set these values in `.env`:
+
+```env
+APP_SECRET_KEY=use-a-long-random-secret
+SESSION_TTL_MINUTES=10080
+
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=use-a-strong-password
+DEPARTMENT_1_EMAIL=department1@example.com
+DEPARTMENT_1_PASSWORD=use-a-strong-password
+DEPARTMENT_2_EMAIL=department2@example.com
+DEPARTMENT_2_PASSWORD=use-a-strong-password
+DEPARTMENT_3_EMAIL=department3@example.com
+DEPARTMENT_3_PASSWORD=use-a-strong-password
+
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/postgres
+FRONTEND_URL=http://localhost:3000
+CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+MODEL_PATH=Model/xlmr_final_model
+```
+
+Use the PostgreSQL connection string from Supabase. Percent-encode special characters in the password, such as `@` to `%40` and `#` to `%23`.
+
+Never commit `.env`, database passwords, Supabase service keys, or model credentials.
+
+## Run Locally
+
+### Backend
+
+From the project root, create and activate the virtual environment:
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r backend\requirements.txt
+.venv\Scripts\Activate.ps1
 ```
 
-## 3) Start the backend
-
-From the project root:
+Install the backend dependencies:
 
 ```powershell
-.\.venv\Scripts\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
+pip install -r backend/requirements.txt
 ```
 
-The backend will run at:
-
-- http://127.0.0.1:8000
-
-## 4) Start the frontend
-
-Open a new terminal and run:
+Start FastAPI:
 
 ```powershell
-npm run dev -- --host 0.0.0.0 --port 3000
+uvicorn backend.app.main:app --reload --port 8000
 ```
 
-The frontend will run at:
+Backend URLs:
 
-- http://localhost:3000
+- API: `http://127.0.0.1:8000`
+- Health check: `http://127.0.0.1:8000/health`
+- API documentation: `http://127.0.0.1:8000/docs`
 
-If port 3000 is already occupied, Vite may switch to the next available port such as 3001.
+### Frontend
 
-## 5) Default login accounts
-
-The backend seeds default accounts for testing:
-
-- Admin
-  - Email: admin@civic.gov.pk
-  - Password: Admin@1234
-
-- Electricity Department
-  - Email: dept1@civic.gov.pk
-  - Password: Dept1@1234
-
-- Gas Department
-  - Email: dept2@civic.gov.pk
-  - Password: Dept2@1234
-
-- Water Department
-  - Email: dept3@civic.gov.pk
-  - Password: Dept3@1234
-
-## Notes
-
-- The app uses a local SQLite database created automatically when the backend starts.
-- The backend is configured to allow local development access from the frontend through the Vite proxy.
-- For production use, change all default credentials and secret values.
-
-## Useful commands
-
-Run frontend build:
+Open a second terminal in the project root:
 
 ```powershell
+npm install
+npm run dev
+```
+
+Frontend URL:
+
+```text
+http://localhost:3000
+```
+
+The Vite development server proxies `/api` requests to the local FastAPI server at port `8000`.
+
+## Test the Application
+
+Verify these workflows after starting both servers:
+
+1. Create a citizen account.
+2. Log in as a citizen and submit a complaint.
+3. Confirm the complaint appears in Supabase `complaints` and `complaint_events`.
+4. Log in as the relevant department and update the complaint status.
+5. Log in as an administrator and review the dashboard.
+6. Test profile updates, complaint deletion, logout, and language switching.
+7. Check the application at a mobile viewport.
+
+Useful validation commands:
+
+```powershell
+python -m py_compile backend/app/main.py
 npm run build
 ```
 
-Run preview build locally:
+## AI Model
 
-```powershell
-npm run preview -- --host 0.0.0.0 --port 4173
+The backend loads the model from:
+
+```text
+Model/xlmr_final_model
 ```
 
-## Troubleshooting
+Set a different location with:
 
-If the backend fails to start:
-
-- confirm the Python virtual environment was created successfully
-- verify requirements are installed:
-
-```powershell
-.\.venv\Scripts\python.exe -m pip install -r backend\requirements.txt
+```env
+MODEL_PATH=C:\path\to\xlmr_final_model
 ```
 
-If the frontend cannot connect to the API:
+If the model is unavailable, the backend uses the built-in keyword classifier fallback. The model directory is ignored by Git because model files can be large.
 
-- confirm the backend is running on port 8000
-- ensure the frontend is using the correct proxy settings in Vite
+## Deployment
 
-## License
+### Frontend on Vercel
 
-This project is for educational and internal project use unless a separate license is supplied by the project owner.
+Use these Vercel settings:
+
+```text
+Framework: Vite
+Build command: npm run build
+Output directory: dist
+Install command: npm install
+```
+
+Add this Vercel environment variable:
+
+```env
+VITE_API_URL=https://your-backend.example.com/api
+```
+
+The frontend uses `/api` locally through the Vite proxy. In production, `VITE_API_URL` points requests to the deployed FastAPI service.
+
+### Backend on Hugging Face Spaces
+
+Deploy the FastAPI backend as a Docker Space or use another Python hosting provider. The production server must listen on the hosting platform's assigned port, commonly `7860` for Hugging Face Docker Spaces.
+
+Set all backend environment variables in the hosting provider's secret manager. Do not upload `.env` or expose the Supabase database password in frontend code.
+
+Set these backend deployment variables:
+
+```env
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/postgres
+APP_SECRET_KEY=use-a-long-random-secret
+FRONTEND_URL=https://your-project.vercel.app
+CORS_ORIGINS=https://your-project.vercel.app
+MODEL_PATH=/app/Model/xlmr_final_model
+```
+
+## Security Notes
+
+- Keep `.env` private.
+- Keep Supabase service-role or database keys on the backend only.
+- Use strong, unique admin and department passwords.
+- Rotate any credential that has been shared or committed.
+- Enable Row Level Security for tables when using Supabase client access directly.
+- The current backend uses the PostgreSQL connection string server-side, so database credentials must never be placed in Vite variables.
+
+## Common Commands
+
+```powershell
+# Start backend
+uvicorn backend.app.main:app --reload --port 8000
+
+# Start frontend
+npm run dev
+
+# Build frontend
+npm run build
+
+# Preview production frontend
+npm run preview
+```
+uvicorn app.main:app --reload --port 8000
+uvicorn backend.app.main:app --reload --port 8000

@@ -17,15 +17,18 @@ import {
   MonitorCog,
   ShieldCheck,
   Sparkles,
+  Mic,
+  Square,
+  Trash2,
   UserCircle2,
   UserRound,
   Waves,
   X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 
-const apiBase = '/api';
+const apiBase = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 const statusColorMap = {
   Pending: 'bg-amber-100 text-amber-800 border-amber-200',
   'In Progress': 'bg-blue-100 text-blue-800 border-blue-200',
@@ -66,6 +69,52 @@ const t = {
     profileUpdated: 'Profile updated successfully',
     complaintSubmitted: 'Complaint submitted successfully',
     loginSuccess: 'Login successful',
+    romanUrdu: 'Roman Urdu',
+    smartService: 'Smart Service',
+    complaintTracking: 'Civic complaint tracking',
+    serviceName: 'SMART COMPLAINT SERVICE',
+    serviceTagline: 'AI-Powered Utility Complaint Management',
+    languageSupport: 'English, Urdu & Roman Urdu Support',
+    textVoiceSubmission: 'Text & Voice Complaint Submission',
+    aiClassification: 'AI-Based Complaint Classification',
+    automaticRouting: 'Automatic Department Routing',
+    statusTracking: 'Complaint Status Tracking',
+    utilityServices: 'Water, Gas & Electricity Services',
+    secureAccess: 'Secure multi-role access',
+    personalizedOwnership: 'Personalized complaint ownership',
+    departmentEscalation: 'Department-aware escalation',
+    bilingualInterface: 'Urdu and English interface',
+    total: 'Total',
+    pending: 'Pending',
+    inProgress: 'In Progress',
+    resolved: 'Resolved',
+    users: 'Users',
+    operations: 'Operations',
+    allComplaints: 'All complaints',
+    status: 'Status',
+    updated: 'Updated',
+    userLabel: 'User',
+    profile: 'Profile',
+    complaintStatusUpdated: 'Complaint status updated',
+    electricity: 'Electricity',
+    gas: 'Gas',
+    water: 'Water',
+    queue: 'Queue',
+    complainantProfile: 'Complainant profile',
+    close: 'Close',
+    address: 'Address',
+    viewComplainantProfile: 'View complainant profile',
+    noDepartmentComplaints: 'No department complaints currently assigned.',
+    submittedBy: 'Submitted by',
+    departmentStatusUpdated: 'Department status updated',
+    voiceNote: 'Voice note',
+    startRecording: 'Record voice note',
+    stopRecording: 'Stop recording',
+    recording: 'Recording...',
+    removeVoiceNote: 'Remove voice note',
+    deleteComplaint: 'Delete complaint',
+    confirmDeleteComplaint: 'Delete this complaint permanently?',
+    complaintDeleted: 'Complaint deleted successfully',
   },
   ur: {
     appName: 'سویل رسپانس ہب',
@@ -95,6 +144,126 @@ const t = {
     profileUpdated: 'پروفائل کامیابی سے اپ ڈیٹ ہوا',
     complaintSubmitted: 'شکایت کامیابی سے جمع ہوئی',
     loginSuccess: 'لاگ ان کامیاب رہا',
+    smartService: 'سمارٹ سروس',
+    complaintTracking: 'شہری شکایات کی نگرانی',
+    serviceName: 'سمارٹ شکایات سروس',
+    serviceTagline: 'مصنوعی ذہانت پر مبنی یوٹیلیٹی شکایات کا انتظام',
+    languageSupport: 'انگریزی، اردو اور رومن اردو کی سہولت',
+    textVoiceSubmission: 'تحریری اور صوتی شکایت جمع کرانے کی سہولت',
+    aiClassification: 'مصنوعی ذہانت سے شکایات کی درجہ بندی',
+    automaticRouting: 'محکمے کو خودکار شکایت بھیجنا',
+    statusTracking: 'شکایت کی حیثیت کا سراغ',
+    utilityServices: 'پانی، گیس اور بجلی کی خدمات',
+    secureAccess: 'محفوظ کثیر سطحی رسائی',
+    personalizedOwnership: 'شکایت کی ذاتی ملکیت',
+    departmentEscalation: 'محکمے کے مطابق کارروائی',
+    bilingualInterface: 'اردو اور انگریزی انٹرفیس',
+    total: 'کل',
+    pending: 'زیر التوا',
+    inProgress: 'جاری ہے',
+    resolved: 'حل شدہ',
+    users: 'صارفین',
+    operations: 'کارروائیاں',
+    allComplaints: 'تمام شکایات',
+    status: 'حیثیت',
+    updated: 'اپ ڈیٹ شدہ',
+    userLabel: 'صارف',
+    profile: 'پروفائل',
+    complaintStatusUpdated: 'شکایت کی حیثیت اپ ڈیٹ ہو گئی',
+    electricity: 'بجلی',
+    gas: 'گیس',
+    water: 'پانی',
+    queue: 'قطار',
+    complainantProfile: 'شکایت کنندہ کا پروفائل',
+    close: 'بند کریں',
+    address: 'پتہ',
+    viewComplainantProfile: 'شکایت کنندہ کا پروفائل دیکھیں',
+    noDepartmentComplaints: 'اس وقت محکمہ کو کوئی شکایت تفویض نہیں ہے۔',
+    submittedBy: 'جمع کرانے والا',
+    departmentStatusUpdated: 'محکمے کی حیثیت اپ ڈیٹ ہو گئی',
+    voiceNote: 'صوتی نوٹ',
+    startRecording: 'صوتی نوٹ ریکارڈ کریں',
+    stopRecording: 'ریکارڈنگ روکیں',
+    recording: 'ریکارڈنگ جاری ہے...',
+    removeVoiceNote: 'صوتی نوٹ ہٹائیں',
+    deleteComplaint: 'شکایت حذف کریں',
+    confirmDeleteComplaint: 'کیا یہ شکایت مستقل طور پر حذف کرنی ہے؟',
+    complaintDeleted: 'شکایت کامیابی سے حذف ہو گئی',
+  },
+  ru: {
+    appName: 'Civic Response Hub',
+    user: 'User',
+    admin: 'Admin',
+    department: 'Mehkama',
+    login: 'Login',
+    signup: 'Sign Up',
+    welcomeBack: 'Khush aamdeed',
+    email: 'Email',
+    password: 'Password',
+    confirmPassword: 'Password dobara likhein',
+    name: 'Poora naam',
+    city: 'Shehar',
+    phone: 'Phone number',
+    streetAddress: 'Gali ka pata',
+    submitComplaint: 'Shikayat jama karein',
+    myProfile: 'Mera profile',
+    dashboard: 'Dashboard',
+    adminDashboard: 'Admin dashboard',
+    complaintHistory: 'Shikayat ki tareekh',
+    logout: 'Logout',
+    noComplaints: 'Abhi koi shikayat nahi',
+    language: 'Zaban',
+    urdu: 'Urdu',
+    english: 'English',
+    romanUrdu: 'Roman Urdu',
+    profileUpdated: 'Profile kamyabi se update ho gaya',
+    complaintSubmitted: 'Shikayat kamyabi se jama ho gayi',
+    loginSuccess: 'Login kamyab raha',
+    smartService: 'Smart Service',
+    complaintTracking: 'Shehri shikayaton ki nigrani',
+    serviceName: 'SMART COMPLAINT SERVICE',
+    serviceTagline: 'AI par mabni utility shikayaton ka intizam',
+    languageSupport: 'English, Urdu aur Roman Urdu support',
+    textVoiceSubmission: 'Text aur voice shikayat jama karna',
+    aiClassification: 'AI se shikayat ki darja bandi',
+    automaticRouting: 'Mehkame ko khudkar shikayat bhejna',
+    statusTracking: 'Shikayat ki haisiyat ka track',
+    utilityServices: 'Pani, gas aur bijli ki khidmaat',
+    secureAccess: 'Mehfooz multi-role rasai',
+    personalizedOwnership: 'Shikayat ki zaati milkiyat',
+    departmentEscalation: 'Mehkame ke mutabiq karwai',
+    bilingualInterface: 'Urdu aur English interface',
+    total: 'Kul',
+    pending: 'Zer-e-iltaawa',
+    inProgress: 'Jari hai',
+    resolved: 'Hal shuda',
+    users: 'Users',
+    operations: 'Karkardagiyan',
+    allComplaints: 'Tamam shikayatein',
+    status: 'Haisiyat',
+    updated: 'Update shuda',
+    userLabel: 'User',
+    profile: 'Profile',
+    complaintStatusUpdated: 'Shikayat ki haisiyat update ho gayi',
+    electricity: 'Bijli',
+    gas: 'Gas',
+    water: 'Pani',
+    queue: 'Qatar',
+    complainantProfile: 'Shikayat kuninda ka profile',
+    close: 'Band karein',
+    address: 'Pata',
+    viewComplainantProfile: 'Shikayat kuninda ka profile dekhein',
+    noDepartmentComplaints: 'Is waqt mehkame ko koi shikayat tafweez nahi hai.',
+    submittedBy: 'Jama karne wala',
+    departmentStatusUpdated: 'Mehkame ki haisiyat update ho gayi',
+    voiceNote: 'Voice note',
+    startRecording: 'Voice note record karein',
+    stopRecording: 'Recording rokein',
+    recording: 'Recording ho rahi hai...',
+    removeVoiceNote: 'Voice note hatayein',
+    deleteComplaint: 'Shikayat delete karein',
+    confirmDeleteComplaint: 'Kya yeh shikayat hamesha ke liye delete karni hai?',
+    complaintDeleted: 'Shikayat kamyabi se delete ho gayi',
   },
 };
 
@@ -106,6 +275,61 @@ const formatDate = (dateString) => {
 };
 
 const classNames = (...values) => values.filter(Boolean).join(' ');
+
+const localizedDepartmentName = (name, ui) => ({
+  Electricity: ui.electricity,
+  Gas: ui.gas,
+  Water: ui.water,
+}[name] || name);
+
+const localizedStatus = (status, ui) => ({
+  Pending: ui.pending,
+  'In Progress': ui.inProgress,
+  Resolved: ui.resolved,
+}[status] || status);
+
+function encodeWav(samples, sampleRate) {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+  const writeString = (offset, value) => value.split('').forEach((character, index) => view.setUint8(offset + index, character.charCodeAt(0)));
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + samples.length * 2, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeString(36, 'data');
+  view.setUint32(40, samples.length * 2, true);
+  samples.forEach((sample, index) => {
+    const clamped = Math.max(-1, Math.min(1, sample));
+    view.setInt16(44 + index * 2, clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff, true);
+  });
+  return new Blob([view], { type: 'audio/wav' });
+}
+
+function ComplaintDeleteButton({ complaintId, token, ui, onDeleted }) {
+  const handleDelete = async () => {
+    if (!window.confirm(ui.confirmDeleteComplaint)) return;
+    try {
+      await apiFetch(`/complaints/${complaintId}`, { method: 'DELETE' }, token);
+      onDeleted();
+    } catch (error) {
+      window.alert(error.message);
+    }
+  };
+
+  return (
+    <button type="button" onClick={handleDelete} className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100">
+      <Trash2 className="h-3.5 w-3.5" />
+      {ui.deleteComplaint}
+    </button>
+  );
+}
 
 function apiFetch(path, options = {}, token) {
   const headers = { ...(options.headers || {}) };
@@ -239,21 +463,21 @@ function App() {
 
   const navItems = useMemo(() => {
     const items = [
-      { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['user'] },
-      { to: '/admin', label: 'Admin', icon: MonitorCog, roles: ['admin'] },
-      { to: `/department/${user?.departmentId || 1}`, label: 'Department', icon: Building2, roles: ['department'] },
-      { to: '/profile', label: 'Profile', icon: UserCircle2, roles: ['user', 'admin', 'department'] },
+      { to: '/dashboard', label: ui.dashboard, icon: LayoutDashboard, roles: ['user'] },
+      { to: '/admin', label: ui.admin, icon: MonitorCog, roles: ['admin'] },
+      { to: `/department/${user?.departmentId || 1}`, label: ui.department, icon: Building2, roles: ['department'] },
+      { to: '/profile', label: ui.profile, icon: UserCircle2, roles: ['user', 'admin', 'department'] },
     ];
     return items.filter((item) => item.roles.includes(user?.role));
-  }, [user]);
+  }, [user, ui]);
 
   if (loadingAuth) {
     return <LoadingScreen />;
   }
 
   return (
-    <div dir={isRtl ? 'rtl' : 'ltr'} className={classNames('min-h-screen bg-gradient-to-br from-emerald-50 via-white to-green-50 text-slate-800', isRtl && 'font-[')}>
-      <div className="mx-auto max-w-[1600px] p-3 sm:p-5 lg:p-7">
+    <div dir={isRtl ? 'rtl' : 'ltr'} className={classNames('min-h-screen overflow-x-hidden bg-gradient-to-br from-emerald-50 via-white to-green-50 text-slate-800', isRtl && 'font-[')}>
+      <div className="mx-auto max-w-[1600px] p-2 sm:p-5 lg:p-7">
         <div className="overflow-hidden rounded-[28px] border border-emerald-100 bg-white/80 shadow-[0_28px_80px_rgba(16,185,129,0.12)] backdrop-blur-xl">
           <ToastStack toasts={toasts} />
           {!user ? (
@@ -263,11 +487,19 @@ function App() {
               <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
           ) : (
-            <div className="flex min-h-screen flex-col lg:flex-row">
-              <aside className={classNames('border-b border-emerald-100 bg-white/90 p-4 lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r', mobileMenuOpen ? 'block' : 'hidden lg:block')}>
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={{ visible: { transition: { staggerChildren: 0.08 } }, hidden: {} }}
+              className="flex min-h-screen flex-col lg:flex-row"
+            >
+              <motion.aside
+                variants={{ hidden: { opacity: 0, x: -18 }, visible: { opacity: 1, x: 0, transition: { duration: 0.45 } } }}
+                className={classNames('border-b border-emerald-100 bg-white/90 p-4 lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r', mobileMenuOpen ? 'block' : 'hidden lg:block')}
+              >
                 <div className="flex items-center justify-between gap-3 border-b border-emerald-100 pb-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-green-600 shadow-lg shadow-emerald-200">
+                    <div className="app-logo flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-green-600 shadow-lg shadow-emerald-200">
                       <ShieldCheck className="h-5 w-5 text-white" />
                     </div>
                     <div>
@@ -307,43 +539,43 @@ function App() {
                     <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-emerald-600 shadow-sm ring-1 ring-emerald-100">
                       <UserRound className="h-4 w-4" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-xs uppercase tracking-[0.2em] text-emerald-700">{user.role}</p>
-                      <p className="font-semibold text-slate-800">{user.name}</p>
+                      <p className="truncate font-semibold text-slate-800">{user.name}</p>
                     </div>
                   </div>
                   <div className="mt-4 space-y-2 text-xs text-slate-600">
-                    <div className="flex items-center justify-between">
+                    <div className="flex min-w-0 items-start justify-between gap-3">
                       <span>{ui.email}</span>
-                      <span className="font-medium text-slate-700">{user.email}</span>
+                      <span className="min-w-0 break-all text-right font-medium text-slate-700">{user.email}</span>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-3">
                       <span>{ui.city}</span>
-                      <span className="font-medium text-slate-700">{user.city}</span>
+                      <span className="truncate text-right font-medium text-slate-700">{user.city}</span>
                     </div>
                   </div>
                 </div>
-              </aside>
+              </motion.aside>
 
-              <div className="flex-1">
+              <motion.div variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0, transition: { duration: 0.45 } } }} className="flex-1">
                 <header className="border-b border-emerald-100 bg-white/80 px-4 py-3 shadow-sm sm:px-6">
                   <div className="flex items-center justify-between gap-3">
                     <button className="rounded-xl border border-emerald-200 p-2 text-emerald-700 lg:hidden" onClick={() => setMobileMenuOpen((prev) => !prev)}>
                       <Menu className="h-5 w-5" />
                     </button>
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 shadow-[0_16px_28px_rgba(16,185,129,0.25)]">
                         <Sparkles className="h-4 w-4 text-white" />
                       </div>
                       <div>
                         <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-emerald-600">{ui.appName}</p>
-                        <h2 className="text-lg font-bold text-slate-800">{user.role === 'admin' ? ui.adminDashboard : user.role === 'department' ? 'Department Operations' : ui.dashboard}</h2>
+                        <h2 className="truncate text-lg font-bold text-slate-800">{user.role === 'admin' ? ui.adminDashboard : user.role === 'department' ? `${ui.department} ${ui.operations}` : ui.dashboard}</h2>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <div className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
-                        {isRtl ? ui.urdu : ui.english}
+                    <div className="flex shrink-0 items-center gap-2">
+                      <div className="hidden rounded-full border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 sm:block">
+                        {lang === 'ur' ? ui.urdu : lang === 'ru' ? ui.romanUrdu : ui.english}
                       </div>
                       <select
                         value={lang}
@@ -352,12 +584,13 @@ function App() {
                       >
                         <option value="en">English</option>
                         <option value="ur">اردو</option>
+                        <option value="ru">Roman Urdu</option>
                       </select>
                     </div>
                   </div>
                 </header>
 
-                <main className="min-h-[calc(100vh-80px)] bg-gradient-to-br from-emerald-50/40 via-white to-green-50/40 p-4 sm:p-6">
+                <main className="min-h-[calc(100vh-80px)] min-w-0 bg-gradient-to-br from-emerald-50/40 via-white to-green-50/40 p-3 sm:p-6">
                   <AnimatePresence mode="wait">
                     <Routes location={location} key={location.pathname}>
                       <Route path="/dashboard" element={<UserDashboard token={token} user={user} ui={ui} pushToast={pushToast} />} />
@@ -368,8 +601,8 @@ function App() {
                     </Routes>
                   </AnimatePresence>
                 </main>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           )}
         </div>
       </div>
@@ -415,6 +648,7 @@ function AuthPage({ mode, onLogin, onSignup, ui, toggleLang, lang }) {
             <div>
               <p className="text-xs uppercase tracking-[0.35em] text-emerald-100">SCMS</p>
               <h1 className="text-3xl font-bold">{ui.appName}</h1>
+              <h1 className="text-3xl font-bold">{ui.serviceName}</h1>
             </div>
           </div>
 
@@ -429,10 +663,9 @@ function AuthPage({ mode, onLogin, onSignup, ui, toggleLang, lang }) {
               </div>
             </div>
             <ul className="space-y-3 text-emerald-50/90">
-              <li className="flex items-center gap-3"><CheckCircle2 className="h-4 w-4" /> Secure multi-role access</li>
-              <li className="flex items-center gap-3"><CheckCircle2 className="h-4 w-4" /> Personalized complaint ownership</li>
-              <li className="flex items-center gap-3"><CheckCircle2 className="h-4 w-4" /> Department-aware escalation</li>
-              <li className="flex items-center gap-3"><CheckCircle2 className="h-4 w-4" /> Urdu and English interface</li>
+              {[ui.languageSupport, ui.textVoiceSubmission, ui.aiClassification, ui.automaticRouting, ui.statusTracking, ui.utilityServices].map((feature) => (
+                <li key={feature} className="flex items-center gap-3"><CheckCircle2 className="h-4 w-4 shrink-0" /> {feature}</li>
+              ))}
             </ul>
           </motion.div>
         </div>
@@ -448,6 +681,7 @@ function AuthPage({ mode, onLogin, onSignup, ui, toggleLang, lang }) {
             <select value={lang} onChange={(event) => toggleLang(event.target.value)} className="rounded-full border border-emerald-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 outline-none">
               <option value="en">English</option>
               <option value="ur">اردو</option>
+              <option value="ru">Roman Urdu</option>
             </select>
           </div>
 
@@ -533,6 +767,14 @@ function UserDashboard({ token, user, ui, pushToast }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [voiceNote, setVoiceNote] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const audioContextRef = useRef(null);
+  const audioSourceRef = useRef(null);
+  const audioProcessorRef = useRef(null);
+  const audioGainRef = useRef(null);
+  const audioStreamRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
   const loadDashboard = () => {
     Promise.all([
@@ -550,6 +792,74 @@ function UserDashboard({ token, user, ui, pushToast }) {
     loadDashboard();
   }, [token]);
 
+  const startRecording = async () => {
+    if (!navigator.mediaDevices?.getUserMedia || !(window.AudioContext || window.webkitAudioContext)) {
+      const isLocalhost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+      pushToast(
+        isLocalhost
+          ? 'Live recording is unavailable in this browser. Try Chrome or Edge and allow microphone access.'
+          : 'Live recording requires a secure connection. Open the app at http://localhost:3000.',
+        'error'
+      );
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const audioContext = new AudioContext();
+      await audioContext.resume();
+      const source = audioContext.createMediaStreamSource(stream);
+      const processor = audioContext.createScriptProcessor(4096, 1, 1);
+      const gain = audioContext.createGain();
+      gain.gain.value = 0;
+      audioChunksRef.current = [];
+      processor.onaudioprocess = (event) => {
+        audioChunksRef.current.push(new Float32Array(event.inputBuffer.getChannelData(0)));
+      };
+      source.connect(processor);
+      processor.connect(gain);
+      gain.connect(audioContext.destination);
+      audioContextRef.current = audioContext;
+      audioSourceRef.current = source;
+      audioProcessorRef.current = processor;
+      audioGainRef.current = gain;
+      audioStreamRef.current = stream;
+      setIsRecording(true);
+    } catch (error) {
+      pushToast(error.name === 'NotAllowedError' ? 'Microphone access was denied' : 'The microphone could not be started', 'error');
+    }
+  };
+
+  const stopRecording = () => {
+    if (!audioContextRef.current) return;
+    audioProcessorRef.current?.disconnect();
+    audioSourceRef.current?.disconnect();
+    audioGainRef.current?.disconnect();
+    audioStreamRef.current?.getTracks().forEach((track) => track.stop());
+    const samples = audioChunksRef.current.length
+      ? Float32Array.from(audioChunksRef.current.flatMap((chunk) => Array.from(chunk)))
+      : new Float32Array();
+    const audioContext = audioContextRef.current;
+    const sampleRate = audioContext.sampleRate;
+    audioContext.close();
+    audioContextRef.current = null;
+    audioSourceRef.current = null;
+    audioProcessorRef.current = null;
+    audioGainRef.current = null;
+    audioStreamRef.current = null;
+    setIsRecording(false);
+    if (!samples.length) {
+      pushToast('No audio was captured. Check that your microphone is enabled.', 'error');
+      return;
+    }
+    const blob = encodeWav(samples, sampleRate);
+    const reader = new FileReader();
+    reader.onloadend = () => setVoiceNote({ data: reader.result.split(',')[1], mimeType: blob.type });
+    reader.readAsDataURL(blob);
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (!description.trim()) {
@@ -560,10 +870,17 @@ function UserDashboard({ token, user, ui, pushToast }) {
     try {
       await apiFetch('/complaints', {
         method: 'POST',
-        body: JSON.stringify({ title, description, language: 'English' }),
+        body: JSON.stringify({
+          title,
+          description,
+          language: 'English',
+          voiceNoteData: voiceNote?.data || null,
+          voiceNoteMimeType: voiceNote?.mimeType || null,
+        }),
       }, token);
       setTitle('');
       setDescription('');
+      setVoiceNote(null);
       loadDashboard();
       pushToast(ui.complaintSubmitted, 'success');
     } catch (error) {
@@ -582,9 +899,9 @@ function UserDashboard({ token, user, ui, pushToast }) {
           { label: 'In Progress', value: summary.inProgress, icon: Gauge },
           { label: 'Resolved', value: summary.resolved, icon: CheckCircle2 },
         ].map(({ label, value, icon: Icon }) => (
-          <div key={label} className="rounded-[26px] border border-emerald-100 bg-white p-4 shadow-[0_18px_40px_rgba(16,185,129,0.08)]">
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-[0_16px_32px_rgba(16,185,129,0.22)]">
-              <Icon className="h-5 w-5" />
+          <div key={label} className="flex flex-col items-center rounded-[26px] border border-emerald-100 bg-white p-5 text-center shadow-[0_18px_40px_rgba(16,185,129,0.08)] md:block md:p-4 md:text-left">
+            <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-[0_16px_32px_rgba(16,185,129,0.22)] md:h-12 md:w-12">
+              <Icon className="h-8 w-8 md:h-5 md:w-5" />
             </div>
             <p className="text-sm text-slate-500">{label}</p>
             <p className="mt-2 text-3xl font-bold text-slate-900">{value}</p>
@@ -615,6 +932,27 @@ function UserDashboard({ token, user, ui, pushToast }) {
               placeholder="Describe the issue in detail..."
               className="w-full rounded-2xl border border-emerald-100 bg-emerald-50/30 px-4 py-3 text-sm text-slate-800 outline-none focus:border-emerald-400"
             />
+            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/30 p-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="text-sm font-medium text-slate-700">{ui.voiceNote}</span>
+                {!isRecording ? (
+                  <button type="button" onClick={startRecording} className="flex items-center gap-2 rounded-xl bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700">
+                    <Mic className="h-4 w-4" /> {ui.startRecording}
+                  </button>
+                ) : (
+                  <button type="button" onClick={stopRecording} className="flex items-center gap-2 rounded-xl bg-rose-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-rose-700">
+                    <Square className="h-3.5 w-3.5" /> {ui.stopRecording}
+                  </button>
+                )}
+                {isRecording && <span className="text-xs text-rose-600">{ui.recording}</span>}
+              </div>
+              {voiceNote && !isRecording && (
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <AudioPreview src={`data:${voiceNote.mimeType};base64,${voiceNote.data}`} />
+                  <button type="button" onClick={() => setVoiceNote(null)} className="text-xs font-medium text-rose-600 hover:text-rose-700">{ui.removeVoiceNote}</button>
+                </div>
+              )}
+            </div>
             <button type="submit" disabled={isSubmitting} className="rounded-2xl bg-gradient-to-r from-emerald-500 to-green-600 px-5 py-3 text-sm font-semibold text-white shadow-[0_18px_32px_rgba(16,185,129,0.24)] transition hover:-translate-y-0.5 disabled:opacity-70">
               {isSubmitting ? 'Submitting...' : ui.submitComplaint}
             </button>
@@ -656,14 +994,18 @@ function UserDashboard({ token, user, ui, pushToast }) {
                     <div className="flex items-center gap-2">
                       <p className="font-semibold text-slate-900">{complaint.title || 'Complaint'}</p>
                       <span className={classNames('rounded-full border px-2.5 py-1 text-[10px] font-semibold', statusColorMap[complaint.status] || 'bg-slate-100 text-slate-700 border-slate-200')}>
-                        {complaint.status}
+                        {localizedStatus(complaint.status, ui)}
                       </span>
                     </div>
                     <p className="mt-2 text-sm text-slate-600">{complaint.description}</p>
+                    {complaint.voiceNoteUrl && <VoiceNotePlayer url={complaint.voiceNoteUrl} token={token} label={ui.voiceNote} />}
                   </div>
                   <div className="text-xs text-slate-500">
                     <p>{departmentMeta[complaint.departmentId]?.name || 'Department'}</p>
                     <p>{formatDate(complaint.createdAt)}</p>
+                    <div className="mt-3">
+                      <ComplaintDeleteButton complaintId={complaint.id} token={token} ui={ui} onDeleted={() => { loadDashboard(); pushToast(ui.complaintDeleted, 'success'); }} />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -672,6 +1014,52 @@ function UserDashboard({ token, user, ui, pushToast }) {
         )}
       </section>
     </motion.div>
+  );
+}
+
+function AudioPreview({ src, className = 'h-9 max-w-full' }) {
+  const audioRef = useRef(null);
+
+  const loadDuration = () => {
+    const audio = audioRef.current;
+    if (audio && (audio.duration === Infinity || audio.duration === 0)) {
+      audio.currentTime = 1e101;
+      audio.ontimeupdate = () => {
+        audio.ontimeupdate = null;
+        audio.currentTime = 0;
+      };
+    }
+  };
+
+  return <audio ref={audioRef} controls preload="metadata" src={src} onLoadedMetadata={loadDuration} onDurationChange={loadDuration} className={className} />;
+}
+
+function VoiceNotePlayer({ url, token, label }) {
+  const [audioUrl, setAudioUrl] = useState('');
+
+  useEffect(() => {
+    let objectUrl = '';
+    fetch(`${apiBase}${url}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((response) => {
+        if (!response.ok) throw new Error('Voice note unavailable');
+        return response.blob();
+      })
+      .then((blob) => {
+        objectUrl = URL.createObjectURL(blob);
+        setAudioUrl(objectUrl);
+      })
+      .catch(() => setAudioUrl(''));
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [url, token]);
+
+  if (!audioUrl) return null;
+  return (
+    <div className="mt-3 flex items-center gap-2 text-xs text-emerald-700">
+      <span>{label}</span>
+      <AudioPreview src={audioUrl} className="h-8 max-w-full" />
+    </div>
   );
 }
 
@@ -698,8 +1086,21 @@ function AdminDashboard({ token, ui, pushToast }) {
   const updateStatus = async (id, status) => {
     try {
       await apiFetch(`/complaints/${id}`, { method: 'PUT', body: JSON.stringify({ status, note: `Status updated to ${status}` }) }, token);
-      loadData();
+      setComplaints((current) => current.map((complaint) => (
+        complaint.id === id ? { ...complaint, status } : complaint
+      )));
+      setSummary((current) => {
+        const previousStatus = complaints.find((complaint) => complaint.id === id)?.status;
+        if (!previousStatus || previousStatus === status) return current;
+        return {
+          ...current,
+          pending: current.pending + (status === 'Pending' ? 1 : 0) - (previousStatus === 'Pending' ? 1 : 0),
+          inProgress: current.inProgress + (status === 'In Progress' ? 1 : 0) - (previousStatus === 'In Progress' ? 1 : 0),
+          resolved: current.resolved + (status === 'Resolved' ? 1 : 0) - (previousStatus === 'Resolved' ? 1 : 0),
+        };
+      });
       pushToast('Complaint status updated', 'success');
+      pushToast(ui.complaintStatusUpdated, 'success');
     } catch (error) {
       pushToast(error.message, 'error');
     }
@@ -709,11 +1110,11 @@ function AdminDashboard({ token, ui, pushToast }) {
     <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} className="space-y-6">
       <section className="grid gap-4 md:grid-cols-5">
         {[
-          { label: 'Total', value: summary.totalComplaints },
-          { label: 'Pending', value: summary.pending },
-          { label: 'In Progress', value: summary.inProgress },
-          { label: 'Resolved', value: summary.resolved },
-          { label: 'Users', value: summary.users },
+          { label: ui.total, value: summary.totalComplaints },
+          { label: ui.pending, value: summary.pending },
+          { label: ui.inProgress, value: summary.inProgress },
+          { label: ui.resolved, value: summary.resolved },
+          { label: ui.users, value: summary.users },
         ].map((item) => (
           <div key={item.label} className="rounded-[24px] border border-emerald-100 bg-white p-4 shadow-[0_18px_40px_rgba(16,185,129,0.08)]">
             <p className="text-sm text-slate-500">{item.label}</p>
@@ -725,7 +1126,7 @@ function AdminDashboard({ token, ui, pushToast }) {
       <section className="grid gap-4 lg:grid-cols-3">
         {Object.entries(summary.departmentBreakdown || {}).map(([name, count]) => (
           <div key={name} className="rounded-[24px] border border-emerald-100 bg-white p-4 shadow-[0_18px_40px_rgba(16,185,129,0.08)]">
-            <p className="text-sm text-slate-500">{name}</p>
+            <p className="text-sm text-slate-500">{localizedDepartmentName(name, ui)}</p>
             <p className="mt-2 text-3xl font-bold text-slate-900">{count}</p>
           </div>
         ))}
@@ -734,8 +1135,8 @@ function AdminDashboard({ token, ui, pushToast }) {
       <section className="rounded-[28px] border border-emerald-100 bg-white p-5 shadow-[0_18px_40px_rgba(16,185,129,0.08)]">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.25em] text-emerald-600">Operations</p>
-            <h3 className="mt-2 text-2xl font-bold text-slate-900">All complaints</h3>
+            <p className="text-xs uppercase tracking-[0.25em] text-emerald-600">{ui.operations}</p>
+            <h3 className="mt-2 text-2xl font-bold text-slate-900">{ui.allComplaints}</h3>
           </div>
         </div>
 
@@ -743,10 +1144,10 @@ function AdminDashboard({ token, ui, pushToast }) {
           <table className="min-w-full text-left text-sm">
             <thead className="border-b border-emerald-100">
               <tr className="text-slate-500">
-                <th className="px-3 py-3 font-medium">User</th>
-                <th className="px-3 py-3 font-medium">Department</th>
-                <th className="px-3 py-3 font-medium">Status</th>
-                <th className="px-3 py-3 font-medium">Updated</th>
+                <th className="px-3 py-3 font-medium">{ui.userLabel}</th>
+                <th className="px-3 py-3 font-medium">{ui.department}</th>
+                <th className="px-3 py-3 font-medium">{ui.status}</th>
+                <th className="px-3 py-3 font-medium">{ui.updated}</th>
               </tr>
             </thead>
             <tbody>
@@ -754,12 +1155,11 @@ function AdminDashboard({ token, ui, pushToast }) {
                 <tr key={complaint.id} className="border-b border-emerald-50 text-slate-700">
                   <td className="px-3 py-3 font-medium">{complaint.userName}</td>
                   <td className="px-3 py-3">{departmentMeta[complaint.departmentId]?.name || complaint.department}</td>
+                  <td className="px-3 py-3">{localizedDepartmentName(departmentMeta[complaint.departmentId]?.name || complaint.department, ui)}</td>
                   <td className="px-3 py-3">
-                    <select value={complaint.status} onChange={(event) => updateStatus(complaint.id, event.target.value)} className="rounded-full border border-emerald-100 bg-emerald-50 px-2 py-1 text-xs font-medium outline-none">
-                      <option value="Pending">Pending</option>
-                      <option value="In Progress">In Progress</option>
-                      <option value="Resolved">Resolved</option>
-                    </select>
+                    <span className={classNames('inline-flex rounded-full border px-2 py-1 text-xs font-medium', statusColorMap[complaint.status] || 'bg-slate-100 text-slate-700 border-slate-200')}>
+                      {localizedStatus(complaint.status, ui)}
+                    </span>
                   </td>
                   <td className="px-3 py-3">{formatDate(complaint.updatedAt)}</td>
                 </tr>
@@ -825,8 +1225,21 @@ function DepartmentDashboard({ token, user, ui, pushToast }) {
   const updateStatus = async (id, status) => {
     try {
       await apiFetch(`/complaints/${id}`, { method: 'PUT', body: JSON.stringify({ status, note: `Updated to ${status}` }) }, token);
-      loadData();
+      setComplaints((current) => current.map((complaint) => (
+        complaint.id === id ? { ...complaint, status } : complaint
+      )));
+      setSummary((current) => {
+        const previousStatus = complaints.find((complaint) => complaint.id === id)?.status;
+        if (!previousStatus || previousStatus === status) return current;
+        return {
+          ...current,
+          pending: current.pending + (status === 'Pending' ? 1 : 0) - (previousStatus === 'Pending' ? 1 : 0),
+          inProgress: current.inProgress + (status === 'In Progress' ? 1 : 0) - (previousStatus === 'In Progress' ? 1 : 0),
+          resolved: current.resolved + (status === 'Resolved' ? 1 : 0) - (previousStatus === 'Resolved' ? 1 : 0),
+        };
+      });
       pushToast('Department status updated', 'success');
+      pushToast(ui.departmentStatusUpdated, 'success');
     } catch (error) {
       pushToast(error.message, 'error');
     }
@@ -836,10 +1249,10 @@ function DepartmentDashboard({ token, user, ui, pushToast }) {
     <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} className="space-y-6">
       <section className="grid gap-4 md:grid-cols-4">
         {[
-          { label: 'Total', value: summary.totalComplaints },
-          { label: 'Pending', value: summary.pending },
-          { label: 'In Progress', value: summary.inProgress },
-          { label: 'Resolved', value: summary.resolved },
+          { label: ui.total, value: summary.totalComplaints },
+          { label: ui.pending, value: summary.pending },
+          { label: ui.inProgress, value: summary.inProgress },
+          { label: ui.resolved, value: summary.resolved },
         ].map((item) => (
           <div key={item.label} className="rounded-[24px] border border-emerald-100 bg-white p-4 shadow-[0_18px_40px_rgba(16,185,129,0.08)]">
             <p className="text-sm text-slate-500">{item.label}</p>
@@ -857,17 +1270,15 @@ function DepartmentDashboard({ token, user, ui, pushToast }) {
             className="w-full max-w-lg rounded-[28px] border border-emerald-100 bg-white p-5 shadow-[0_30px_80px_rgba(15,23,42,0.18)]"
           >
             <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.25em] text-emerald-600">Complainant profile</p>
+                <p className="text-xs uppercase tracking-[0.25em] text-emerald-600">{ui.complainantProfile}</p>
                 <h3 className="mt-2 text-2xl font-bold text-slate-900">{selectedUser.name}</h3>
-              </div>
-              <button onClick={() => setSelectedUser(null)} className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100">Close</button>
+              <button onClick={() => setSelectedUser(null)} className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100">{ui.close}</button>
             </div>
             <div className="mt-5 grid gap-3 text-sm text-slate-600 md:grid-cols-2">
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3"><span className="block font-semibold text-slate-700">Email</span> {selectedUser.email}</div>
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3"><span className="block font-semibold text-slate-700">City</span> {selectedUser.city}</div>
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3"><span className="block font-semibold text-slate-700">Phone</span> {selectedUser.phone}</div>
-              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3 md:col-span-2"><span className="block font-semibold text-slate-700">Address</span> {selectedUser.streetAddress}</div>
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3"><span className="block font-semibold text-slate-700">{ui.email}</span> {selectedUser.email}</div>
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3"><span className="block font-semibold text-slate-700">{ui.city}</span> {selectedUser.city}</div>
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3"><span className="block font-semibold text-slate-700">{ui.phone}</span> {selectedUser.phone}</div>
+              <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3 md:col-span-2"><span className="block font-semibold text-slate-700">{ui.address}</span> {selectedUser.streetAddress}</div>
             </div>
           </motion.div>
         </div>
@@ -876,13 +1287,13 @@ function DepartmentDashboard({ token, user, ui, pushToast }) {
       <section className="rounded-[28px] border border-emerald-100 bg-white p-5 shadow-[0_18px_40px_rgba(16,185,129,0.08)]">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <p className="text-xs uppercase tracking-[0.25em] text-emerald-600">Department</p>
-            <h3 className="mt-2 text-2xl font-bold text-slate-900">{departmentMeta[user.departmentId]?.name || 'Department'} queue</h3>
+            <p className="text-xs uppercase tracking-[0.25em] text-emerald-600">{ui.department}</p>
+            <h3 className="mt-2 text-2xl font-bold text-slate-900">{localizedDepartmentName(departmentMeta[user.departmentId]?.name || 'Department', ui)} {ui.queue}</h3>
           </div>
         </div>
 
         {complaints.length === 0 ? (
-          <EmptyState message="No department complaints currently assigned." />
+          <EmptyState message={ui.noDepartmentComplaints} />
         ) : (
           <div className="space-y-3">
             {complaints.map((complaint) => (
@@ -892,11 +1303,11 @@ function DepartmentDashboard({ token, user, ui, pushToast }) {
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-semibold text-slate-900">{complaint.title || 'Complaint'}</p>
                       <span className={classNames('rounded-full border px-2.5 py-1 text-[10px] font-semibold', statusColorMap[complaint.status] || 'bg-slate-100 text-slate-700 border-slate-200')}>
-                        {complaint.status}
+                        {localizedStatus(complaint.status, ui)}
                       </span>
                     </div>
                     <p className="mt-2 text-sm text-slate-600">{complaint.description}</p>
-                    <p className="mt-2 text-xs text-slate-500">Submitted by {complaint.userName} • {formatDate(complaint.createdAt)}</p>
+                    <p className="mt-2 text-xs text-slate-500">{ui.submittedBy} {complaint.userName} • {formatDate(complaint.createdAt)}</p>
                   </div>
                   <div className="flex min-w-[220px] flex-col gap-2 md:items-end">
                     <button
@@ -907,9 +1318,9 @@ function DepartmentDashboard({ token, user, ui, pushToast }) {
                       View complainant profile
                     </button>
                     <select value={complaint.status} onChange={(event) => updateStatus(complaint.id, event.target.value)} className="w-full rounded-2xl border border-emerald-100 bg-white px-3 py-2 text-sm text-slate-700 outline-none">
-                      <option value="Pending">Pending</option>
-                      <option value="In Progress">In Progress</option>
-                      <option value="Resolved">Resolved</option>
+                      <option value="Pending">{ui.pending}</option>
+                      <option value="In Progress">{ui.inProgress}</option>
+                      <option value="Resolved">{ui.resolved}</option>
                     </select>
                   </div>
                 </div>

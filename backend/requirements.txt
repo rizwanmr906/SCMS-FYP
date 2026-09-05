@@ -4,3 +4,7 @@ pydantic==2.10.2
 torch==2.13.0
 transformers==4.46.2
 sentencepiece
+python-dotenv==1.1.1
+
+psycopg[binary]==3.2.3
+psycopg-pool==3.2.6
